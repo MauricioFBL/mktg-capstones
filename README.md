@@ -70,3 +70,10 @@ This project is licensed under MIT. See [LICENSE](LICENSE) for more details.
 ---
 🚀 Ready to turn data into strategic decisions! 🚀
 
+´´´bash
+instalar docker
+docker ps -al
+docker build .
+docker image ls 
+sh init_docker.sh
+´´´
