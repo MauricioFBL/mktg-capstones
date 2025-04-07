@@ -4,7 +4,17 @@ import random
 from datetime import datetime, timedelta
 
 
-def random_date(start, end):
+def random_date(start: str, end:str) -> datetime:
+    """
+    gENERA UN RANGO DE FECHAS
+
+    Args:
+        start (str): FECHA DE INICIO con formato "yyyy-mm-dd"
+        end (str): FECHA DE FIN con formato "yyyy-mm-dd"
+
+    Returns:
+        datetime: _description_
+    """
     time_between_dates = end - start
     days_between_dates = time_between_dates.days
     random_number_of_days = random.randrange(days_between_dates)
