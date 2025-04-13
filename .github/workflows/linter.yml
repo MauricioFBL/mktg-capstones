@@ -41,11 +41,3 @@ jobs:
           if [ $puntuacion -gt 15 ]; then
             echo "La puntuación de Ruff es demasiado alta. Fallando el paso."
             exit 1
-          
-          
-      - name: Guardar resultados como artefacto
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: ruff-report
-          path: ruff_results.json
