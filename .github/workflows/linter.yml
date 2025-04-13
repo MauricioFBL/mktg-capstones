@@ -1,0 +1,43 @@
+name: Linting con Ruff
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Actualizar e Instalar Ruff
+        run: |
+          pip install --upgrade pip
+          pip install --upgrade ruff
+      - name: Ejecutar Ruff y obtener puntuación
+        run: ruff check --output-format json | tee ruff_results.json
+
+      - name: Imprimir Resultados de Ruff (Debug)
+        run: cat ruff_results.json
+
+      - name: Contar Errores con jq
+        id: contar_errores
+        run: echo "puntuacion=$(jq '.[].severity' ruff_results.json | grep -c error)" >> $GITHUB_OUTPUT
+
+      - name: Verificar Puntuación y Fallar si es Necesario
+        run: |
+          puntuacion=${{ steps.contar_errores.outputs.puntuacion }}
+          echo "Puntuación de Ruff: $puntuacion"
+          if [ $puntuacion -gt 15 ]; then
+            echo "La puntuación de Ruff es demasiado alta. Fallando el paso."
+            exit 1
