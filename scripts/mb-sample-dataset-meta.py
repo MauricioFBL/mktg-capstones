@@ -2,7 +2,7 @@
 
 import random
 from datetime import datetime, timedelta
-from typing import list
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -17,23 +17,21 @@ def random_date(start: datetime, end: datetime) -> datetime:
 
     Returns:
         datetime: Randomly generated date within the range.
-
     """
     delta = end - start
     return start + timedelta(days=random.randint(0, delta.days))
 
 
-def generate_campaigns(num_campaigns: int, brands: list[str], types: list[str]) -> pd.DataFrame:
+def generate_campaigns(num_campaigns: int, brands: List[str], types: List[str]) -> pd.DataFrame:
     """Generate a set of simulated marketing campaigns.
 
     Args:
         num_campaigns (int): Number of campaigns to generate.
-        brands (list[str]): list of brand names.
-        types (list[str]): list of campaign types.
+        brands (list[str]): List of brand names.
+        types (list[str]): List of campaign types.
 
     Returns:
         pd.DataFrame: DataFrame containing campaign information.
-
     """
     data = {
         'Campaign_ID': range(1001, 1001 + num_campaigns),
@@ -43,7 +41,7 @@ def generate_campaigns(num_campaigns: int, brands: list[str], types: list[str]) 
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv('campaigns.csv', index=False)
+    df.to_csv('./inputs/campaigns.csv', index=False)
     return df
 
 
@@ -56,7 +54,6 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
 
     Returns:
         pd.DataFrame: DataFrame containing ad group information.
-
     """
     data = {
         'Ad_Group_ID': range(2001, 2001 + num_groups),
@@ -67,7 +64,7 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv('ad_groups.csv', index=False)
+    df.to_csv('./inputs/ad_groups.csv', index=False)
     return df
 
 
@@ -80,7 +77,6 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame containing ad information.
-
     """
     data = {
         'Ad_ID': range(3001, 3001 + num_ads),
@@ -92,25 +88,27 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
         'Platform': np.random.choice(['Facebook', 'Instagram', 'Audience Network'], num_ads)
     }
     df = pd.DataFrame(data)
-    df.to_csv('ads.csv', index=False)
+    df.to_csv('./inputs/ads.csv', index=False)
     return df
 
 
 def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.DataFrame:
-    """Generate simulated daily performance metrics for ads.
+    """Generate simulated daily performance metrics for ads, including platform.
 
     Args:
         ads_df (pd.DataFrame): DataFrame containing ad information.
         dates (pd.DatetimeIndex): Date range to generate data for.
 
     Returns:
-        pd.DataFrame: DataFrame with daily metrics.
-
+        pd.DataFrame: DataFrame with daily metrics including Platform.
     """
     daily_data = []
 
     for date in dates:
-        for ad_id in ads_df['Ad_ID']:
+        for _, ad_row in ads_df.iterrows():
+            ad_id = ad_row['Ad_ID']
+            platform = ad_row['Platform']
+
             impressions = random.randint(100, 5000)
             clicks = random.randint(1, impressions // random.randint(2, 10))
             interactions = random.randint(1, clicks * random.randint(2, 5))
@@ -126,6 +124,7 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
             daily_data.append({
                 'Date': date.strftime('%Y-%m-%d'),
                 'Ad_ID': ad_id,
+                'Platform': platform,
                 'Impressions': impressions,
                 'Clicks': clicks,
                 'Interactions': interactions,
@@ -138,7 +137,7 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
             })
 
     df = pd.DataFrame(daily_data)
-    df.to_csv('daily_data.csv', index=False)
+    df.to_csv('./inputs/daily_data.csv', index=False)
     return df
 
 
@@ -167,5 +166,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-# This script generates a simulated dataset for marketing campaigns, ad groups, ads, and daily performance metrics.
-# The generated CSV files can be used for testing and analysis purposes.
