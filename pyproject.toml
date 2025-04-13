@@ -1,0 +1,9 @@
+[tool.ruff]
+line-length = 79                # Estilo clásico de PEP8
+target-version = "py39"         # Compatible con Python 3.9
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "C", "D", "UP", "ERA", "S"] 
+ignore = ["E501", "D203", "D213", "S311"]
+per-file-ignores = { "tests/*" = ["D"] }
+
