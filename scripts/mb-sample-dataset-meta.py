@@ -17,6 +17,7 @@ def random_date(start: datetime, end: datetime) -> datetime:
 
     Returns:
         datetime: Randomly generated date within the range.
+
     """
     delta = end - start
     return start + timedelta(days=random.randint(0, delta.days))
@@ -32,6 +33,7 @@ def generate_campaigns(num_campaigns: int, brands: List[str], types: List[str]) 
 
     Returns:
         pd.DataFrame: DataFrame containing campaign information.
+
     """
     data = {
         'Campaign_ID': range(1001, 1001 + num_campaigns),
@@ -54,6 +56,7 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
 
     Returns:
         pd.DataFrame: DataFrame containing ad group information.
+
     """
     data = {
         'Ad_Group_ID': range(2001, 2001 + num_groups),
@@ -77,6 +80,7 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame containing ad information.
+
     """
     data = {
         'Ad_ID': range(3001, 3001 + num_ads),
@@ -101,6 +105,7 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
 
     Returns:
         pd.DataFrame: DataFrame with daily metrics including Platform.
+
     """
     daily_data = []
 
