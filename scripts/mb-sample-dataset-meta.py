@@ -2,7 +2,7 @@
 
 import random
 from datetime import datetime, timedelta
-from typing import List
+from typing import list
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,7 @@ def random_date(start: datetime, end: datetime) -> datetime:
     return start + timedelta(days=random.randint(0, delta.days))
 
 
-def generate_campaigns(num_campaigns: int, brands: List[str], types: List[str]) -> pd.DataFrame:
+def generate_campaigns(num_campaigns: int, brands: list[str], types: list[str]) -> pd.DataFrame:
     """Generate a set of simulated marketing campaigns.
 
     Args:
