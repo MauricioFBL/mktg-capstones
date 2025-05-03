@@ -41,3 +41,4 @@ jobs:
           if [ $puntuacion -gt 15 ]; then
             echo "La puntuación de Ruff es demasiado alta. Fallando el paso."
             exit 1
+          fi
