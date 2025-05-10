@@ -2,7 +2,6 @@
 
 import random
 from datetime import datetime, timedelta
-from typing import list
 
 import numpy as np
 import pandas as pd

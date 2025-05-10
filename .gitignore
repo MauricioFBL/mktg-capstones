@@ -1,3 +1,11 @@
+# Terraform
+infra/terraform/.terraform/  
+.terraform/             # provider plugins and backend state (SHOULD be ignored)
+*.tfstate               # local state files (using remote backend so none should exist)
+*.tfstate.backup
+.crash.log              # crash files from failed Terraform runs
+override.tf             # optional override files
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
