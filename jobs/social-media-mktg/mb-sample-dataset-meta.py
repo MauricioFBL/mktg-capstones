@@ -1,5 +1,8 @@
 """Script to generate simulated marketing campaign datasets for testing purposes."""
 
+import sys
+import os
+import boto3
 import random
 from datetime import datetime, timedelta
 

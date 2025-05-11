@@ -19,6 +19,10 @@
 #   max_capacity = 2
 # }
 
+# ----------------------------
+# AWS Glue spark job infrastructure
+# ----------------------------
+
 # Subida del script de Glue a S3
 resource "aws_s3_object" "data_transformation_social_media_script" {
   bucket = var.glue_bucket
@@ -49,6 +53,39 @@ resource "aws_glue_job" "data_transformation_social_media" {
 
   tags = {
     Project     = "marketing-analytics"
+    Environment = var.environment
+  }
+}
+
+# ----------------------------
+# AWS Glue python shell job infrastructure
+# ----------------------------
+resource "aws_s3_object" "marketing_data_simulation" {
+  bucket = var.glue_bucket
+  key    = "scripts/python_shell/sample-meta-gen.py"
+  source = "../../jobs/social-media-mktg/sample-meta-gen.py"
+  etag   = filemd5("../../jobs/social-media-mktg/sample-meta-gen.py")
+}
+
+resource "aws_glue_job" "simulate_marketing_data" {
+  name     = "sdata-ingestion-social-media"
+  role_arn = aws_iam_role.glue_role.arn
+
+  command {
+    name            = "pythonshell"
+    script_location = "s3://${var.glue_bucket}/scripts/python_shell/sample-meta-gen.py"
+    python_version  = "3.9"
+  }
+
+  glue_version = "3.0"
+  max_capacity = 0.0625
+
+  default_arguments = {
+    "--TempDir" = "s3://${var.glue_bucket}/temp/"
+  }
+
+  tags = {
+    Project     = var.project
     Environment = var.environment
   }
 }
