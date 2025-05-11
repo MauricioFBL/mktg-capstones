@@ -5,6 +5,7 @@ infra/terraform/.terraform/
 *.tfstate.backup
 .crash.log              # crash files from failed Terraform runs
 override.tf             # optional override files
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
