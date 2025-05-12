@@ -2,10 +2,19 @@
 
 import random
 from datetime import datetime, timedelta
-from typing import List
 
 import numpy as np
 import pandas as pd
+
+
+def get_s3_location() -> str:
+    """Get the S3 location for storing generated CSV files.
+
+    Returns:
+        str: S3 location.
+
+    """
+    return 's3://fcorp-data-prod/raw/marketing/social_media/src=meta'
 
 
 def random_date(start: datetime, end: datetime) -> datetime:
@@ -17,12 +26,13 @@ def random_date(start: datetime, end: datetime) -> datetime:
 
     Returns:
         datetime: Randomly generated date within the range.
+
     """
     delta = end - start
     return start + timedelta(days=random.randint(0, delta.days))
 
 
-def generate_campaigns(num_campaigns: int, brands: List[str], types: List[str]) -> pd.DataFrame:
+def generate_campaigns(num_campaigns: int, brands: list[str], types: list[str]) -> pd.DataFrame:
     """Generate a set of simulated marketing campaigns.
 
     Args:
@@ -32,6 +42,7 @@ def generate_campaigns(num_campaigns: int, brands: List[str], types: List[str]) 
 
     Returns:
         pd.DataFrame: DataFrame containing campaign information.
+
     """
     data = {
         'Campaign_ID': range(1001, 1001 + num_campaigns),
@@ -41,7 +52,8 @@ def generate_campaigns(num_campaigns: int, brands: List[str], types: List[str]) 
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv('./inputs/campaigns.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig', index=False)
     return df
 
 
@@ -54,6 +66,7 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
 
     Returns:
         pd.DataFrame: DataFrame containing ad group information.
+
     """
     data = {
         'Ad_Group_ID': range(2001, 2001 + num_groups),
@@ -64,7 +77,8 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv('./inputs/ad_groups.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig', index=False)
     return df
 
 
@@ -77,6 +91,7 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: DataFrame containing ad information.
+
     """
     data = {
         'Ad_ID': range(3001, 3001 + num_ads),
@@ -88,7 +103,8 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
         'Platform': np.random.choice(['Facebook', 'Instagram', 'Audience Network'], num_ads)
     }
     df = pd.DataFrame(data)
-    df.to_csv('./inputs/ads.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig', index=False)
     return df
 
 
@@ -101,6 +117,7 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
 
     Returns:
         pd.DataFrame: DataFrame with daily metrics including Platform.
+
     """
     daily_data = []
 
@@ -137,12 +154,14 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
             })
 
     df = pd.DataFrame(daily_data)
-    df.to_csv('./inputs/daily_data.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig',  index=False)
     return df
 
 
 def main() -> None:
     """Generate simulated marketing campaign datasets."""
+    print('Starting data generation...')
     start_date = datetime(2022, 1, 1)
     end_date = datetime(2023, 12, 31)
     dates = pd.date_range(start=start_date, end=end_date)

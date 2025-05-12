@@ -17,6 +17,31 @@ marketing-analytics-pipeline/
 │── visualization/             # Visualization scripts with QuickSight or Power BI
 │── docs/                      # Project documentation
 │── tests/                     # Unit and integration tests
+├── jobs/
+│   ├── social-media-mktg/
+│   │   └── social-media-big-tbl.py  # Código del Glue Job
+│   └── ...   
+│── build/                     # lambda functions zip packahes
+│── functions/                 # Lambda functions
+│       └── function/
+│           └── lambda_function.py
+├── infra/
+│   └── terraform/
+│       ├── main.tf                  # Entrada general (proveedores, backend)
+│       ├── variables.tf             # Variables globales
+│       ├── terraform.tfvars         # Valores específicos del entorno
+│       ├── outputs.tf               # Valores de salida útiles
+│       ├── backend.tf               # (opcional) configuración del backend remoto
+│       ├── provider.tf              # (opcional) definición de proveedor AWS
+│       ├── glue_jobs.tf             # Declaración de todos los Glue Jobs
+│       ├── lambdas.tf               # Declaración de funciones Lambda
+│       ├── mwaa.tf                  # Declaración de entorno MWAA (más adelante)
+│       ├── iam.tf                   # Roles y políticas IAM
+│       ├── s3_objects.tf            # Carga de scripts Glue/Lambda a S3
+│       └── .terraform/              # Plugins (IGNORAR en git)
+│       └── .terraform.lock.hcl      # Lock de proveedores (✅ versionar)
+│
+│── config/      
 │── .gitignore                 # Files to ignore in Git
 │── requirements.txt           # Python dependencies
 │── Dockerfile                 # Docker setup
@@ -70,10 +95,10 @@ This project is licensed under MIT. See [LICENSE](LICENSE) for more details.
 ---
 🚀 Ready to turn data into strategic decisions! 🚀
 
-´´´bash
-instalar docker
+```bash
+# install docker
 docker ps -al
 docker build .
 docker image ls 
 sh init_docker.sh
-´´´
+```

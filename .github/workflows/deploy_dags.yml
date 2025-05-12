@@ -1,0 +1,33 @@
+name: Deploy DAGs to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-dags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy DAGs to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "dags/*.py"
+          target: "/home/ec2-user/airflow/dags"
+          strip_components: 1
+
+      - name: Restart Airflow Scheduler
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "🔁 Reiniciando Scheduler..."
+            sudo systemctl restart airflow-scheduler
