@@ -1,13 +1,20 @@
 """Script to generate simulated marketing campaign datasets for testing purposes."""
 
-import sys
-import os
-import boto3
 import random
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+
+
+def get_s3_location() -> str:
+    """Get the S3 location for storing generated CSV files.
+
+    Returns:
+        str: S3 location.
+
+    """
+    return 's3://fcorp-data-prod/raw/marketing/social_media/src=meta'
 
 
 def random_date(start: datetime, end: datetime) -> datetime:
@@ -45,7 +52,8 @@ def generate_campaigns(num_campaigns: int, brands: list[str], types: list[str]) 
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv('./inputs/campaigns.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig', index=False)
     return df
 
 
@@ -69,7 +77,8 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv('./inputs/ad_groups.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig', index=False)
     return df
 
 
@@ -94,7 +103,8 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
         'Platform': np.random.choice(['Facebook', 'Instagram', 'Audience Network'], num_ads)
     }
     df = pd.DataFrame(data)
-    df.to_csv('./inputs/ads.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig', index=False)
     return df
 
 
@@ -144,12 +154,14 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
             })
 
     df = pd.DataFrame(daily_data)
-    df.to_csv('./inputs/daily_data.csv', index=False)
+    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+        encoding='utf-8-sig',  index=False)
     return df
 
 
 def main() -> None:
     """Generate simulated marketing campaign datasets."""
+    print('Starting data generation...')
     start_date = datetime(2022, 1, 1)
     end_date = datetime(2023, 12, 31)
     dates = pd.date_range(start=start_date, end=end_date)

@@ -1,3 +1,5 @@
+"""Pack all lambda functions into zip files for deployment."""
+
 import os
 import zipfile
 
