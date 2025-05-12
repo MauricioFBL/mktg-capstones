@@ -35,6 +35,7 @@ resource "aws_instance" "airflow" {
   instance_type = "t3.micro"
   key_name      = aws_key_pair.airflow_key.key_name
   vpc_security_group_ids = [aws_security_group.airflow_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.airflow_instance_profile.name  # <- Esta línea es clave
 
   root_block_device {
     volume_size = 20

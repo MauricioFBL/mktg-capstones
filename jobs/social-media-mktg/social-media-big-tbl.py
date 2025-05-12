@@ -16,7 +16,32 @@ logger.setLevel(logging.INFO)
 """Glue job to process campaign, ad group, and daily metrics from CSV files."""
 
 
-def read_inputs(spark: SparkSession, base_path: str = "./inputs") -> tuple[DataFrame, DataFrame, DataFrame, DataFrame]:
+def get_raw_s3_location() -> str:
+    """Get the S3 location for storing generated CSV files.
+
+    Returns:
+        str: S3 location.
+
+    """
+    return 's3://fcorp-data-prod/raw/marketing/social_media/src=meta'
+
+
+def get_stg_s3_location() -> str:
+    """Get the S3 location for storing generated CSV files.
+
+    Returns:
+        str: S3 location.
+
+    """
+    return 's3://fcorp-data-prod/staging/marketing/social_media/'
+
+
+def read_inputs(spark: SparkSession, base_path: str = "./inputs"
+                ) -> tuple[
+                    DataFrame,
+                    DataFrame,
+                    DataFrame,
+                    DataFrame]:
     """Read campaign, ad group, ad, and daily data CSV files.
 
     Args:
@@ -166,13 +191,17 @@ def main() -> None:
     job = Job(glueContext)
     job.init(args['JOB_NAME'], args)
 
-    campaign_df, group_df, ads_df, daily_df = read_inputs(spark)
+    base_path = get_raw_s3_location()
+    campaign_df, group_df, ads_df, daily_df = read_inputs(
+        spark, base_path)
     campaign_df = transform_campaigns(campaign_df)
     group_df = transform_ad_groups(group_df)
     ads_df = transform_ads(ads_df)
     result_df = join_and_clean(daily_df, ads_df, group_df, campaign_df)
 
-    write_output(result_df, "s3://fcorp-data-prod/staging/your_output/")
+    write_output(
+        result_df,
+        get_stg_s3_location() + "/src=meta/meta_daily.csv")
     logger.info("Job committed successfully.")
     job.commit()
 

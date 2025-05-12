@@ -66,7 +66,8 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
         Action : [
           "glue:StartJobRun",
           "glue:GetJobRun",
-          "glue:GetJob"
+          "glue:GetJob",
+          "glue:ListJobs"
         ],
         Resource : "*"
       },
@@ -88,7 +89,9 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
           "s3:GetObject",
           "s3:ListBucket"
         ],
-        Resource: "arn:aws:s3:::fcorp-data-prod/*"
+        Resource: [
+          "arn:aws:s3:::fcorp-data-prod/*",
+          "arn:aws:s3:::fcorp-data-prod",]
       }
     ]
   })
