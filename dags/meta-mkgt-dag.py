@@ -4,7 +4,10 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.providers.amazon.aws.operators.athena import AthenaOperator
-from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
+from airflow.providers.amazon.aws.operators.glue import (
+    AwsGlueJobOperator,
+    GlueJobOperator,
+)
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
 default_args = {
@@ -32,13 +35,14 @@ with DAG(
 ) as dag:
 
     # 1. Simular datos en S3
-    simulate_data = GlueJobOperator(
+    simulate_data = AwsGlueJobOperator(
         task_id="simulate_marketing_data",
         job_name="simulate-marketing-data",
-        iam_role_name="glue-role-prod",
         aws_conn_id="aws_default",
-        create_job_kwargs={"create_job": False},
         region_name=REGION,
+        script_args={},                      # Puedes dejarlo vacío o pasar --parametros del job
+        wait_for_completion=True,
+        retries=1
     )
 
     # 2. Validar archivo generado (por ejemplo daily_data.csv)
@@ -55,10 +59,11 @@ with DAG(
     transform_data = GlueJobOperator(
         task_id="transform_social_media_data",
         job_name="data-transformation-social-media",
-        iam_role_name="glue-role-prod",
         aws_conn_id="aws_default",
-        create_job_kwargs={"create_job": False},
         region_name=REGION,
+        script_args={},                      # Puedes dejarlo vacío o pasar --parametros del job
+        wait_for_completion=True,
+        retries=1
     )
 
     # 4. Crear/Actualizar tabla en Athena
