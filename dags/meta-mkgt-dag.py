@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.providers.amazon.aws.operators.athena import AthenaOperator
-from airflow.providers.amazon.aws.operators.glue import AwsGlueJobOperator
+from airflow.providers.amazon.aws.operators.glue_job import GlueJobOperator
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
 default_args = {
