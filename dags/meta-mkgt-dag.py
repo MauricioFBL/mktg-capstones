@@ -15,15 +15,15 @@ default_args = {
 }
 
 BUCKET = "fcorp-data-prod"
-RAW_PREFIX = "raw/"
-CONSUMPTION_PREFIX = "consumption/social_media/"
+RAW_PREFIX = "raw/marketing/social_media/src=meta/"
+CONSUMPTION_PREFIX = "staging/marketing/social_media/src=meta/"
 REGION = "us-east-1"
 ATHENA_DB = "marketing_db"
 ATHENA_TABLE = "meta_daily_campaigns"
 OUTPUT_LOCATION = f"s3://{BUCKET}/athena_query_results/"
 
 with DAG(
-    dag_id="glue_marketing_pipeline_with_validation",
+    dag_id="af_glue_meta_marketing_pipeline",
     default_args=default_args,
     schedule_interval=None,
     catchup=False,
@@ -35,7 +35,9 @@ with DAG(
     simulate_data = GlueJobOperator(
         task_id="simulate_marketing_data",
         job_name="simulate-marketing-data",
+        iam_role_name="glue-role-prod",
         aws_conn_id="aws_default",
+        create_job_kwargs={"create_job": False},
         region_name=REGION,
     )
 
@@ -43,7 +45,7 @@ with DAG(
     wait_for_csv = S3KeySensor(
         task_id="wait_for_csv",
         bucket_name=BUCKET,
-        bucket_key=f"{RAW_PREFIX}daily_data.csv",  # ajusta si va a otra ruta
+        bucket_key=f"{RAW_PREFIX}campaigns.csv",  # ajusta si va a otra ruta
         aws_conn_id="aws_default",
         poke_interval=30,
         timeout=300,
@@ -53,7 +55,9 @@ with DAG(
     transform_data = GlueJobOperator(
         task_id="transform_social_media_data",
         job_name="data-transformation-social-media",
+        iam_role_name="glue-role-prod",
         aws_conn_id="aws_default",
+        create_job_kwargs={"create_job": False},
         region_name=REGION,
     )
 
