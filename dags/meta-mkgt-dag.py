@@ -32,7 +32,7 @@ with DAG(
 ) as dag:
 
     # 1. Simular datos en S3
-    simulate_data = AwsGlueJobOperator(
+    simulate_data = GlueJobOperator(
         task_id="simulate_marketing_data",
         job_name="simulate-marketing-data",
         aws_conn_id="aws_default",
@@ -50,7 +50,7 @@ with DAG(
     )
 
     # 3. Transformar datos simulados
-    transform_data = AwsGlueJobOperator(
+    transform_data = GlueJobOperator(
         task_id="transform_social_media_data",
         job_name="data-transformation-social-media",
         aws_conn_id="aws_default",
