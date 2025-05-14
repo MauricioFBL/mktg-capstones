@@ -22,12 +22,29 @@ jobs:
           target: "/home/ec2-user/airflow/dags"
           strip_components: 1
 
-      - name: Restart Airflow Scheduler
+      - name: Copy DAGs into Airflow container
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "🔁 Reiniciando Scheduler..."
-            sudo systemctl restart airflow-scheduler
+            docker cp /home/ec2-user/airflow/dags/. airflow-docker-webserver-1:/opt/airflow/dags
+
+      - name: Restart Airflow webserver
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker restart airflow-docker-webserver-1
+
+      - name: Verify DAGs in container (optional)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker exec airflow-docker-webserver-1 ls -l /opt/airflow/dags

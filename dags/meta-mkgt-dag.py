@@ -3,9 +3,14 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
+
 from airflow.providers.amazon.aws.operators.athena import AthenaOperator
 from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
+from airflow.operators.python import PythonOperator
+
+import boto3
+import time
 
 default_args = {
     "owner": "airflow",
@@ -22,6 +27,41 @@ ATHENA_DB = "marketing_db"
 ATHENA_TABLE = "meta_daily_campaigns"
 OUTPUT_LOCATION = f"s3://{BUCKET}/athena_query_results/"
 
+
+def get_glue_client():
+    """Get Glue client."""
+    session = boto3.Session(region_name=REGION)
+    return session.client("glue")
+
+
+def execute_glue_job(job_name, glue_client, script_args=None):
+    """Execute Glue job."""
+    response = glue_client.start_job_run(
+        JobName=job_name,
+        Arguments=script_args or {}
+    )
+    return response["JobRunId"]
+
+
+def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
+    """Wait for Glue job completion."""
+    while True:
+        response = glue_client.get_job_run(JobName=job_name, RunId=job_run_id)
+        status = response["JobRun"]["JobRunState"]
+        if status in ["SUCCEEDED", "FAILED", "STOPPED"]:
+            return status
+        time.sleep(30)
+
+
+def execute_glue_job_and_wait(job_name, script_args=None):
+    """Execute Glue job and wait for completion."""
+    glue_client = get_glue_client()
+    job_run_id = execute_glue_job(job_name, glue_client)
+    status = wait_for_glue_job_completion(job_name, job_run_id, glue_client)
+    if status != "SUCCEEDED":
+        raise Exception(f"Glue job {job_name} failed with status: {status}")
+
+
 with DAG(
     dag_id="af_glue_meta_marketing_pipeline",
     default_args=default_args,
@@ -31,14 +71,12 @@ with DAG(
     tags=["glue", "athena", "s3"],
 ) as dag:
 
-    # 1. Simular datos en S3
-    simulate_data = GlueJobOperator(
+    # 1. Simular datos de marketing
+    simulate_data = PythonOperator(
         task_id="simulate_marketing_data",
-        job_name="simulate-marketing-data",
-        aws_conn_id="aws_default",
-        region_name=REGION,
-        script_args={},                      # Puedes dejarlo vacío o pasar --parametros del job
-        wait_for_completion=True
+        python_callable=execute_glue_job_and_wait,
+        op_args=["sdata-ingestion-social-media"],
+        provide_context=True,
     )
 
     # 2. Validar archivo generado (por ejemplo daily_data.csv)
@@ -52,13 +90,11 @@ with DAG(
     )
 
     # 3. Transformar datos simulados
-    transform_data = GlueJobOperator(
+    simulate_data = PythonOperator(
         task_id="transform_social_media_data",
-        job_name="data-transformation-social-media",
-        aws_conn_id="aws_default",
-        region_name=REGION,
-        script_args={},                      # Puedes dejarlo vacío o pasar --parametros del job
-        wait_for_completion=True
+        python_callable=execute_glue_job_and_wait,
+        op_args=["data-transformation-social-media"],
+        provide_context=True,
     )
 
     # 4. Crear/Actualizar tabla en Athena
