@@ -90,7 +90,7 @@ with DAG(
     )
 
     # 3. Transformar datos simulados
-    simulate_data = PythonOperator(
+    transform_data = PythonOperator(
         task_id="transform_social_media_data",
         python_callable=execute_glue_job_and_wait,
         op_args=["data-transformation-social-media"],
