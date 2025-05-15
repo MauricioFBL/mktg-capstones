@@ -136,7 +136,10 @@ with DAG(
             'field.delim' = ','
         )
         LOCATION 's3://{BUCKET}/{CONSUMPTION_PREFIX}'
-        TBLPROPERTIES ('has_encrypted_data'='false');
+        TBLPROPERTIES (
+            'has_encrypted_data'='false',
+            'skip.header.line.count'='1'
+        );
         ''',
         database=ATHENA_DB,
         output_location=OUTPUT_LOCATION,
