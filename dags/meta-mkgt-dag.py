@@ -97,8 +97,18 @@ with DAG(
         provide_context=True,
         
     )
-
+    
     # 4. Crear/Actualizar tabla en Athena
+    create_athena_db = AthenaOperator(
+    task_id="create_athena_db",
+    query="CREATE DATABASE IF NOT EXISTS marketing_db;",
+    database="default",  # O cualquier DB existente
+    output_location=OUTPUT_LOCATION,
+    aws_conn_id="aws_default",
+    region_name=REGION,
+    )
+
+    # 5. Crear/Actualizar tabla en Athena
     create_athena_table = AthenaOperator(
         task_id="create_athena_table",
         query=f'''
@@ -139,4 +149,4 @@ with DAG(
     )
 
     # Orquestación
-    simulate_data >> wait_for_csv >> transform_data >> create_athena_table
+    simulate_data >> wait_for_csv >> transform_data >> create_athena_db >> create_athena_table
