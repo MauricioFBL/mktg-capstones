@@ -91,7 +91,8 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
         ],
         Resource: [
           "arn:aws:s3:::fcorp-data-prod/*",
-          "arn:aws:s3:::fcorp-data-prod",]
+          "arn:aws:s3:::fcorp-data-prod",
+          ]
       },
       {
           Sid : "AllowGetGlueExecutionRole",

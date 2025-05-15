@@ -1,16 +1,13 @@
 """Create dag to simulate social media pipeline."""
 
+import time
 from datetime import datetime, timedelta
 
-from airflow import DAG
-
-from airflow.providers.amazon.aws.operators.athena import AthenaOperator
-from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
-from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
-from airflow.operators.python import PythonOperator
-
 import boto3
-import time
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.amazon.aws.operators.athena import AthenaOperator
+from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
 default_args = {
     "owner": "airflow",
@@ -95,10 +92,19 @@ with DAG(
         python_callable=execute_glue_job_and_wait,
         op_args=["data-transformation-social-media"],
         provide_context=True,
-        
     )
 
     # 4. Crear/Actualizar tabla en Athena
+    create_athena_db = AthenaOperator(
+        task_id="create_athena_db",
+        query="CREATE DATABASE IF NOT EXISTS marketing_db;",
+        database="default",  # O cualquier DB existente
+        output_location=OUTPUT_LOCATION,
+        aws_conn_id="aws_default",
+        region_name=REGION,
+    )
+
+    # 5. Crear/Actualizar tabla en Athena
     create_athena_table = AthenaOperator(
         task_id="create_athena_table",
         query=f'''
@@ -139,4 +145,4 @@ with DAG(
     )
 
     # Orquestación
-    simulate_data >> wait_for_csv >> transform_data >> create_athena_table
+    simulate_data >> wait_for_csv >> transform_data >> create_athena_db >> create_athena_table
