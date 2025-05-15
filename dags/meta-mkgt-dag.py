@@ -95,6 +95,7 @@ with DAG(
         python_callable=execute_glue_job_and_wait,
         op_args=["data-transformation-social-media"],
         provide_context=True,
+        
     )
 
     # 4. Crear/Actualizar tabla en Athena
@@ -134,6 +135,7 @@ with DAG(
         database=ATHENA_DB,
         output_location=OUTPUT_LOCATION,
         aws_conn_id="aws_default",
+        region_name=REGION,
     )
 
     # Orquestación
