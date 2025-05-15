@@ -197,7 +197,8 @@ resource "aws_iam_policy" "glue_s3_prefix_policy" {
           "arn:aws:s3:::fcorp-data-prod/staging/*",
           "arn:aws:s3:::fcorp-data-prod/consumption/*",
           "arn:aws:s3:::fcorp-data-prod/scripts/glue/*",
-          "arn:aws:s3:::fcorp-data-prod/logs/*"
+          "arn:aws:s3:::fcorp-data-prod/logs/*",
+          "arn:aws:s3:::fcorp-data-prod/scripts/*",
         ]
       }
     ]

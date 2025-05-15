@@ -77,7 +77,7 @@ def generate_ad_groups(num_groups: int, campaigns_df: pd.DataFrame) -> pd.DataFr
         ]
     }
     df = pd.DataFrame(data)
-    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+    df.to_csv(f'{get_s3_location()}/ad_groups.csv',
         encoding='utf-8-sig', index=False)
     return df
 
@@ -103,7 +103,7 @@ def generate_ads(num_ads: int, ad_groups_df: pd.DataFrame) -> pd.DataFrame:
         'Platform': np.random.choice(['Facebook', 'Instagram', 'Audience Network'], num_ads)
     }
     df = pd.DataFrame(data)
-    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+    df.to_csv(f'{get_s3_location()}/ads.csv',
         encoding='utf-8-sig', index=False)
     return df
 
@@ -154,7 +154,7 @@ def generate_daily_data(ads_df: pd.DataFrame, dates: pd.DatetimeIndex) -> pd.Dat
             })
 
     df = pd.DataFrame(daily_data)
-    df.to_csv(f'{get_s3_location()}/campaigns.csv',
+    df.to_csv(f'{get_s3_location()}/daily_data.csv',
         encoding='utf-8-sig',  index=False)
     return df
 
