@@ -23,7 +23,7 @@
 # AWS Glue spark job infrastructure
 # ----------------------------
 
-# Subida del script de Glue a S3
+# Loads Glue script to S3
 resource "aws_s3_object" "data_transformation_social_media_script" {
   bucket = var.glue_bucket
   key    = "scripts/glue/data-transformation-social-media.py"
@@ -35,7 +35,7 @@ resource "aws_s3_object" "data_transformation_social_media_script" {
   }
 }
 
-# Creación del Glue Job
+# Define Glue job
 resource "aws_glue_job" "data_transformation_social_media" {
   name     = "data-transformation-social-media"
   role_arn = aws_iam_role.glue_role.arn
@@ -86,6 +86,46 @@ resource "aws_glue_job" "simulate_marketing_data" {
 
   tags = {
     Project     = var.project
+    Environment = var.environment
+  }
+}
+# -------------- SOCIAL MEDIA FINAL JOB--------------
+resource "aws_s3_object" "data_consumption_social_media_meta_script" {
+  bucket = var.glue_bucket
+  key    = "scripts/glue/data-consumption-meta-month.py"
+  source = "../../jobs/social-media-mktg/data-consumption-meta-month.py"
+  etag   = filemd5("../../jobs/social-media-mktg/data-consumption-meta-month.py")
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
+# Creación del Glue Job
+resource "aws_glue_job" "data_consumption_social_media_meta" {
+  name     = "data-consumption-social-media-meta"
+  role_arn = aws_iam_role.glue_role.arn
+
+  command {
+    name            = "glueetl"
+    script_location = "s3://${var.glue_bucket}/scripts/glue/data-consumption-meta-month.py"
+    python_version  = "3"
+  }
+
+  glue_version      = "4.0"
+  worker_type       = "G.1X"
+  number_of_workers = 2
+  description       = "Summarizes social media campaign, ad, and daily data into a monthly table"
+  max_retries       = 1
+  default_arguments = {
+    "--TempDir"                = "s3://${var.glue_bucket}/temp/"
+    "--INPUT_PATH"             = "s3://${var.glue_bucket}/staging/marketing/social_media/src=meta/"
+    "--OUTPUT_PATH"            = "s3://${var.glue_bucket}/consumption/marketing/social_media/meta_monthly/"
+  }
+  
+
+  tags = {
+    Project     = "marketing-analytics"
     Environment = var.environment
   }
 }
