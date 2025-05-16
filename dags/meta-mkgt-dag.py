@@ -10,18 +10,21 @@ from airflow.providers.amazon.aws.operators.athena import AthenaOperator
 from airflow.providers.amazon.aws.sensors.s3 import S3KeySensor
 
 default_args = {
-    "owner": "airflow",
+    "owner": "mbautista",
     "start_date": datetime(2024, 1, 1),
     "retries": 1,
     "retry_delay": timedelta(minutes=5),
+    "email_on_failure": False,
 }
 
 BUCKET = "fcorp-data-prod"
 RAW_PREFIX = "raw/marketing/social_media/src=meta/"
-CONSUMPTION_PREFIX = "staging/marketing/social_media/src=meta/"
+STG_PREFIX = "staging/marketing/social_media/src=meta/"
+CON_PREFIX = "consumption/marketing/social_media/meta_monthly/"
 REGION = "us-east-1"
 ATHENA_DB = "marketing_db"
-ATHENA_TABLE = "meta_daily_campaigns"
+ATHENA_TABLE_STG = "meta_daily_campaigns"
+ATHENA_TABLE_CON = "meta_monthly_summary"
 OUTPUT_LOCATION = f"s3://{BUCKET}/athena_query_results/"
 
 
@@ -66,6 +69,23 @@ with DAG(
     catchup=False,
     description="Simula, transforma y valida datos de marketing usando Glue + S3 + Athena",
     tags=["glue", "athena", "s3"],
+    doc_md="""
+    ### DAG: af_glue_meta_marketing_pipeline
+
+    Este DAG automatiza un flujo de trabajo de marketing digital que incluye:
+
+    1. **Simulación de datos** en S3 (raw).
+    2. **Validación del archivo generado** mediante sensor en S3.
+    3. **Transformación** y agregación mensual con AWS Glue.
+    4. **Creación/actualización** de tablas en Athena:
+        - Tabla de staging (`meta_daily_campaigns`)
+        - Tabla de consumo (`meta_monthly_summary`)
+    5. **Repair table** para registrar particiones en la tabla de consumo.
+
+    **Tecnologías**: AWS Glue, S3, Athena, Airflow
+
+    **Autor**: airflow
+    """
 ) as dag:
 
     # 1. Simular datos de marketing
@@ -74,6 +94,7 @@ with DAG(
         python_callable=execute_glue_job_and_wait,
         op_args=["sdata-ingestion-social-media"],
         provide_context=True,
+        max_retries=1,
     )
 
     # 2. Validar archivo generado (por ejemplo daily_data.csv)
@@ -102,13 +123,14 @@ with DAG(
         output_location=OUTPUT_LOCATION,
         aws_conn_id="aws_default",
         region_name=REGION,
+        max_retries=1,
     )
 
     # 5. Crear/Actualizar tabla en Athena
     create_athena_table = AthenaOperator(
         task_id="create_athena_table",
         query=f'''
-        CREATE EXTERNAL TABLE IF NOT EXISTS {ATHENA_DB}.{ATHENA_TABLE} (
+        CREATE EXTERNAL TABLE IF NOT EXISTS {ATHENA_DB}.{ATHENA_TABLE_STG} (
             campaign_id string,
             ad_group_id string,
             ad_group_name string,
@@ -135,7 +157,7 @@ with DAG(
             'serialization.format' = ',',
             'field.delim' = ','
         )
-        LOCATION 's3://{BUCKET}/{CONSUMPTION_PREFIX}'
+        LOCATION 's3://{BUCKET}/{STG_PREFIX}'
         TBLPROPERTIES (
             'has_encrypted_data'='false',
             'skip.header.line.count'='1'
@@ -147,5 +169,72 @@ with DAG(
         region_name=REGION,
     )
 
+    # 6. Transformar datos simulados
+    create_meta_data_summary = PythonOperator(
+        task_id="create_meta_data_summary",
+        python_callable=execute_glue_job_and_wait,
+        op_args=["data-consumption-social-media-meta"],
+        provide_context=True,
+        max_retries=1,
+    )
+
+    # 7. Crear/Actualizar tabla en Athena consumption
+    create_athena_consumption_table = AthenaOperator(
+        task_id="create_athena_consumption_table",
+        query=f'''
+        CREATE EXTERNAL TABLE IF NOT EXISTS {ATHENA_DB}.{ATHENA_TABLE_CON} (
+            campaign_id           int,
+            ad_group_name         string,
+            ad_name               string,
+            platform              string,
+            marca                 string,
+            tipo                  string,
+            audience              string,
+            ad_type               string,
+            impressions           bigint,
+            clicks                bigint,
+            spend                 double,
+            conversions           bigint,
+            completed             bigint,
+            CTR                   double,
+            CPC                   double,
+            CPA                   double,
+            ROI                   double,
+            CPM                   double,
+            completion_rate       double,
+            CTR_3m                double,
+            CPA_3m                double,
+            ROI_3m                double,
+            spend_3m              double,
+            conversions_3m        bigint,
+            last_updated_date     date
+        )
+        PARTITIONED BY (
+            year                  int,
+            month                 int
+            )
+        STORED AS PARQUET
+        LOCATION 's3://{BUCKET}/{CON_PREFIX}'
+        TBLPROPERTIES (
+            'parquet.compress' = 'SNAPPY',
+            'has_encrypted_data' = 'false'
+        );
+        ''',
+        database=ATHENA_DB,
+        output_location=OUTPUT_LOCATION,
+        aws_conn_id="aws_default",
+        region_name=REGION,
+    )
+
+    # 8. Crear/Actualizar tabla en Athena consumption
+    repair_athena_table = AthenaOperator(
+        task_id="repair_athena_table_consumption",
+        query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE_CON};",
+        database=ATHENA_DB,
+        output_location=OUTPUT_LOCATION,
+        aws_conn_id="aws_default",
+        region_name=REGION,
+    )
+
     # Orquestación
-    simulate_data >> wait_for_csv >> transform_data >> create_athena_db >> create_athena_table
+    simulate_data >> wait_for_csv >> transform_data >> create_athena_db >> create_athena_table >> create_meta_data_summary >> create_athena_consumption_table >> repair_athena_table
