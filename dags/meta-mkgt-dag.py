@@ -94,7 +94,6 @@ with DAG(
         python_callable=execute_glue_job_and_wait,
         op_args=["sdata-ingestion-social-media"],
         provide_context=True,
-        max_retries=1,
     )
 
     # 2. Validar archivo generado (por ejemplo daily_data.csv)
@@ -123,7 +122,6 @@ with DAG(
         output_location=OUTPUT_LOCATION,
         aws_conn_id="aws_default",
         region_name=REGION,
-        max_retries=1,
     )
 
     # 5. Crear/Actualizar tabla en Athena
@@ -175,7 +173,6 @@ with DAG(
         python_callable=execute_glue_job_and_wait,
         op_args=["data-consumption-social-media-meta"],
         provide_context=True,
-        max_retries=1,
     )
 
     # 7. Crear/Actualizar tabla en Athena consumption
