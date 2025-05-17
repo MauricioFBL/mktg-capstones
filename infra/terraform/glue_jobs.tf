@@ -119,7 +119,7 @@ resource "aws_glue_job" "data_consumption_social_media_meta" {
   max_retries       = 1
   default_arguments = {
     "--TempDir"                = "s3://${var.glue_bucket}/temp/"
-    "--INPUT_PATH"             = "s3://${var.glue_bucket}/staging/marketing/social_media/src=meta/"
+    "--INPUT_PATH"             = "s3://${var.glue_bucket}/staging/marketing/social_media/src=meta/meta_daily.csv/"
     "--OUTPUT_PATH"            = "s3://${var.glue_bucket}/consumption/marketing/social_media/meta_monthly/"
   }
   

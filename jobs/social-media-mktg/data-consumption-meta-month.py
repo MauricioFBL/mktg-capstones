@@ -7,7 +7,10 @@ from awsglue.context import GlueContext
 from awsglue.dynamicframe import DynamicFrame
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
-from pyspark.sql.functions import col, month, sum, to_date, year
+from pyspark.sql import DataFrame, Window
+from pyspark.sql.functions import avg, col, expr, month, sum, to_date, year
+from pyspark.sql.functions import round as spark_round
+from pyspark.sql.types import LongType
 
 # ========= Funciones =========
 
@@ -37,8 +40,31 @@ def read_input_data(glue_context: GlueContext, input_path: str,
     return dyf
 
 
-def transform_data(dyf: DynamicFrame, glue_context: GlueContext,
-                   logger: Logger) -> DynamicFrame:
+def define_correct_types(df: DataFrame, cols_map: dict) -> DataFrame:
+    """Convert DataFrame columns to the correct types.
+
+    Args:
+        df (DataFrame): Input DataFrame.
+        cols_map (dict): Dictionary mapping column names to types.
+
+    Returns:
+        DataFrame: DataFrame with converted column types.
+
+    """
+    for col_name, col_type in cols_map.items():
+        if col_type == "int":
+            df = df.withColumn(col_name, col(col_name).cast("int"))
+        elif col_type == "long":
+            df = df.withColumn(col_name, col(col_name).cast(LongType()))
+        elif col_type == "double":
+            df = df.withColumn(col_name, col(col_name).cast("double"))
+        elif col_type == "string":
+            df = df.withColumn(col_name, col(col_name).cast("string"))
+    return df
+
+
+def transform_data(dyf: DynamicFrame,
+                   logger: Logger) -> DataFrame:
     """Clean, enrich and aggregate the data.
 
     Args:
@@ -47,7 +73,7 @@ def transform_data(dyf: DynamicFrame, glue_context: GlueContext,
         logger (Logger): Logger instance from the Glue context.
 
     Returns:
-        DynamicFrame: Aggregated and partition-ready data.
+        DataFrame: Aggregated and partition-ready data.
 
     """
     logger.info("Starting data transformation")
@@ -57,11 +83,32 @@ def transform_data(dyf: DynamicFrame, glue_context: GlueContext,
            .withColumn("year", year("date_parsed")) \
            .withColumn("month", month("date_parsed"))
 
+    df = df.withColumn("campaign_id", col("campaign_id").cast("int"))
+
     df = df.filter(
         (col("impressions") > 0) &
         (col("spend") >= 0) &
         (col("clicks") >= 0)
     )
+    conversion_types = {
+        "campaign_id": "string",
+        "ad_group_name": "string",
+        "ad_name": "string",
+        "platform": "string",
+        "marca": "string",
+        "tipo": "string",
+        "audience": "string",
+        "ad_type": "string",
+        "year": "int",
+        "month": "int",
+        "impressions": "long",
+        "clicks": "long",
+        "spend": "double",
+        "conversions": "long",
+        "completed": "long"
+    }
+
+    df = define_correct_types(df, conversion_types)
 
     df_agg = df.groupBy(
         "campaign_id", "ad_group_name", "ad_name", "platform",
@@ -76,7 +123,65 @@ def transform_data(dyf: DynamicFrame, glue_context: GlueContext,
 
     logger.info(f"Transformation complete. Aggregated record count:"
                 f"{df_agg.count()}")
-    return DynamicFrame.fromDF(df_agg, glue_context, "df_agg")
+    return df_agg
+
+
+def calculate_metrics(df: DataFrame, logger: Logger) -> DataFrame:
+    """Calculate additional metrics for the DataFrame.
+
+    Args:
+        df (DataFrame): Input DataFrame.
+        logger (Logger): Logger instance from the Glue context.
+
+    Returns:
+        DataFrame: DataFrame with additional metrics.
+
+    """
+    df = df.withColumn("CTR", col("clicks") / col("impressions")) \
+           .withColumn("CPC", col("spend") / col("clicks")) \
+           .withColumn("CPA", col("spend") / col("conversions")) \
+           .withColumn("ROI", (col("conversions") * 100) / col("spend")) \
+           .withColumn("CPM", (col("spend") * 1000) / col("impressions")) \
+           .withColumn("completion_rate", col("completed") / col("impressions"))
+    logger.info("Extra Metrics calculated.")
+    return df
+
+
+def create_kpis_from_3m(df: DataFrame, glue_context: GlueContext,
+                        logger: Logger) -> DataFrame:
+    """Create KPIs from the last 3 months of data.
+
+    Args:
+        df (DataFrame): Input DataFrame.
+        glue_context (GlueContext): Glue context for conversion.
+        logger (Logger): Logger instance from the Glue context.
+
+    Returns:
+        DataFrame: DataFrame with KPIs from the last 3 months.
+
+    """
+    # Definir ventana de 3 meses móviles
+    window_spec = Window.partitionBy("platform", "marca", "tipo", "audience", "ad_type")\
+                        .orderBy("year", "month")\
+                        .rowsBetween(-2, 0)
+
+    # 8. Métricas móviles
+    final_df = df.withColumn("CTR_3m", avg("CTR").over(window_spec))\
+        .withColumn("CPA_3m", avg("CPA").over(window_spec))\
+        .withColumn("ROI_3m", avg("ROI").over(window_spec))\
+        .withColumn("spend_3m", sum("spend").over(window_spec))\
+        .withColumn("conversions_3m", sum("conversions").over(window_spec))
+
+    final_df = final_df.withColumn("CTR_3m", spark_round(col("CTR_3m"), 4))\
+        .withColumn("CPA_3m", spark_round(col("CPA_3m"), 4))\
+        .withColumn("ROI_3m", spark_round(col("ROI_3m"), 4))\
+        .withColumn("spend_3m", spark_round(col("spend_3m"), 2))\
+        .withColumn("conversions_3m", spark_round(col("conversions_3m"), 2))
+
+    final_df = final_df.withColumn(
+        "last_updated_date", expr("date_sub(current_date(), 1)"))
+    logger.info("KPIs from the last 3 months calculated.")
+    return DynamicFrame.fromDF(final_df, glue_context, "final_df")
 
 
 def write_parquet_partitioned(
@@ -127,6 +232,9 @@ def main() -> None:
     # ========= Ejecución principal =========
     raw_data = read_input_data(glue_context, INPUT_PATH, logger)
     transformed_data = transform_data(raw_data, glue_context, logger)
+    del raw_data
+    transformed_data = calculate_metrics(transformed_data, logger)
+    transformed_data = create_kpis_from_3m(transformed_data, glue_context, logger)
     write_parquet_partitioned(transformed_data, OUTPUT_PATH,
                               glue_context, logger)
     logger.info("Job completed successfully.")
