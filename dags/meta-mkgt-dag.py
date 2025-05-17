@@ -50,7 +50,7 @@ def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
         status = response["JobRun"]["JobRunState"]
         if status in ["SUCCEEDED", "FAILED", "STOPPED"]:
             return status
-        time.sleep(30)
+        time.sleep(20)
 
 
 def execute_glue_job_and_wait(job_name, script_args=None):
@@ -180,7 +180,7 @@ with DAG(
         task_id="create_athena_consumption_table",
         query=f'''
         CREATE EXTERNAL TABLE IF NOT EXISTS {ATHENA_DB}.{ATHENA_TABLE_CON} (
-            campaign_id           int,
+            campaign_id           string,
             ad_group_name         string,
             ad_name               string,
             platform              string,
