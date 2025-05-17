@@ -90,43 +90,43 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
           "s3:ListBucket",
           "s3:GetBucketLocation"
         ],
-        Resource: [
+        Resource : [
           "arn:aws:s3:::fcorp-data-prod/*",
           "arn:aws:s3:::fcorp-data-prod",
-          ]
+        ]
       },
       {
-          Sid : "AllowGetGlueExecutionRole",
-          Effect : "Allow",
-          Action : ["iam:GetRole"],
-          Resource : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/glue-role-${var.environment}"
+        Sid : "AllowGetGlueExecutionRole",
+        Effect : "Allow",
+        Action : ["iam:GetRole"],
+        Resource : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/glue-role-${var.environment}"
       },
       {
-          Sid    = "AllowGlueCreateDatabase",
-          Effect = "Allow",
-          Action = [
-            "glue:CreateDatabase",
-            "glue:UpdateDatabase",
-            "glue:GetDatabase",
-            "glue:GetDatabases",
-            "glue:DeleteDatabase",
-            "glue:CreateTable",
-            "glue:UpdateTable",
-            "glue:GetTable",
-            "glue:GetTables",
-            "glue:DeleteTable",
-            "glue:CreatePartition",
-            "glue:UpdatePartition",
-            "glue:GetPartition",
-            "glue:GetPartitions",
-            "glue:DeletePartition",
-          ],
-          Resource = [
-            "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
-            "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:database/*",
-            "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:table/*/*",
-          ]
-        }
+        Sid    = "AllowGlueCreateDatabase",
+        Effect = "Allow",
+        Action = [
+          "glue:CreateDatabase",
+          "glue:UpdateDatabase",
+          "glue:GetDatabase",
+          "glue:GetDatabases",
+          "glue:DeleteDatabase",
+          "glue:CreateTable",
+          "glue:UpdateTable",
+          "glue:GetTable",
+          "glue:GetTables",
+          "glue:DeleteTable",
+          "glue:CreatePartition",
+          "glue:UpdatePartition",
+          "glue:GetPartition",
+          "glue:GetPartitions",
+          "glue:DeletePartition",
+        ],
+        Resource = [
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:database/*",
+          "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:table/*/*",
+        ]
+      }
     ]
   })
 }

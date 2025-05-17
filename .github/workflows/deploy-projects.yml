@@ -35,7 +35,7 @@ jobs:
       - name: Contar Errores con jq
         id: contar_errores
         run: echo "puntuacion=$(jq '.[].severity' ruff_results.json | grep -c error)" >> $GITHUB_OUTPUT
-        
+
       - name: Verificar Puntuación y Fallar si es Necesario
         run: |
           puntuacion=${{ steps.contar_errores.outputs.puntuacion }}
@@ -87,11 +87,12 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            sleep 10  # espera que webserver se reinicie
-            docker exec airflow-docker-webserver-1 airflow dags list > /tmp/dag_output.log 2> /tmp/dag_error.log
-            if [ -s /tmp/dag_error.log ]; then
-              echo "Errores detectados al cargar los DAGs:"
-              docker exec airflow-docker-webserver-1 cat /tmp/dag_error.log
+            sleep 10  # espera que webserver se reinicie      
+            echo "Revisando DAGs cargados en Airflow..."
+            docker exec airflow-docker-webserver-1 airflow dags list --output json > dags_output.json
+            if grep -q 'Traceback' /opt/airflow/logs/scheduler/latest/airflow-scheduler.log; then
+              echo "❌ Se encontraron errores al cargar los DAGs"
+              docker exec airflow-docker-webserver-1 cat /opt/airflow/logs/scheduler/latest/airflow-scheduler.log
               exit 1
             fi
 
