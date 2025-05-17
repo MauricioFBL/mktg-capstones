@@ -36,11 +36,11 @@ resource "aws_security_group" "airflow_sg" {
 }
 
 resource "aws_instance" "airflow" {
-  ami           = "ami-0c02fb55956c7d316"
-  instance_type = "t3.medium"
-  key_name      = aws_key_pair.airflow_key_w.key_name
+  ami                    = "ami-0c02fb55956c7d316"
+  instance_type          = "t3.medium"
+  key_name               = aws_key_pair.airflow_key_w.key_name
   vpc_security_group_ids = [aws_security_group.airflow_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.airflow_instance_profile.name  # <- Esta línea es clave
+  iam_instance_profile   = aws_iam_instance_profile.airflow_instance_profile.name # <- Esta línea es clave
 
   root_block_device {
     volume_size = 20

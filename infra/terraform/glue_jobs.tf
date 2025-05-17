@@ -46,10 +46,10 @@ resource "aws_glue_job" "data_transformation_social_media" {
     python_version  = "3"
   }
 
-  glue_version     = "4.0"
-  worker_type      = "G.1X"
+  glue_version      = "4.0"
+  worker_type       = "G.1X"
   number_of_workers = 2
-  description      = "Transforms social media campaign, ad, and daily data into a unified table"
+  description       = "Transforms social media campaign, ad, and daily data into a unified table"
 
   tags = {
     Project     = "marketing-analytics"
@@ -118,11 +118,11 @@ resource "aws_glue_job" "data_consumption_social_media_meta" {
   description       = "Summarizes social media campaign, ad, and daily data into a monthly table"
   max_retries       = 1
   default_arguments = {
-    "--TempDir"                = "s3://${var.glue_bucket}/temp/"
-    "--INPUT_PATH"             = "s3://${var.glue_bucket}/staging/marketing/social_media/src=meta/meta_daily.csv/"
-    "--OUTPUT_PATH"            = "s3://${var.glue_bucket}/consumption/marketing/social_media/meta_monthly/"
+    "--TempDir"     = "s3://${var.glue_bucket}/temp/"
+    "--INPUT_PATH"  = "s3://${var.glue_bucket}/staging/marketing/social_media/src=meta/meta_daily.csv/"
+    "--OUTPUT_PATH" = "s3://${var.glue_bucket}/consumption/marketing/social_media/meta_monthly/"
   }
-  
+
 
   tags = {
     Project     = "marketing-analytics"
