@@ -40,12 +40,14 @@ def read_input_data(glue_context: GlueContext, input_path: str,
     return dyf
 
 
-def define_correct_types(df: DataFrame, cols_map: dict) -> DataFrame:
+def define_correct_types(df: DataFrame, cols_map: dict,
+                         logger: Logger) -> DataFrame:
     """Convert DataFrame columns to the correct types.
 
     Args:
         df (DataFrame): Input DataFrame.
         cols_map (dict): Dictionary mapping column names to types.
+        logger (Logger): Logger instance from the Glue context.
 
     Returns:
         DataFrame: DataFrame with converted column types.
@@ -60,6 +62,8 @@ def define_correct_types(df: DataFrame, cols_map: dict) -> DataFrame:
             df = df.withColumn(col_name, col(col_name).cast("double"))
         elif col_type == "string":
             df = df.withColumn(col_name, col(col_name).cast("string"))
+
+    logger.info("Data types converted successfully.")
     return df
 
 
@@ -108,7 +112,7 @@ def transform_data(dyf: DynamicFrame,
         "completed": "long"
     }
 
-    df = define_correct_types(df, conversion_types)
+    df = define_correct_types(df, conversion_types, logger)
 
     df_agg = df.groupBy(
         "campaign_id", "ad_group_name", "ad_name", "platform",
@@ -231,10 +235,11 @@ def main() -> None:
 
     # ========= Ejecución principal =========
     raw_data = read_input_data(glue_context, INPUT_PATH, logger)
-    transformed_data = transform_data(raw_data, glue_context, logger)
+    transformed_data = transform_data(raw_data, logger)
     del raw_data
     transformed_data = calculate_metrics(transformed_data, logger)
-    transformed_data = create_kpis_from_3m(transformed_data, glue_context, logger)
+    transformed_data = create_kpis_from_3m(transformed_data,
+                                           glue_context, logger)
     write_parquet_partitioned(transformed_data, OUTPUT_PATH,
                               glue_context, logger)
     logger.info("Job completed successfully.")
