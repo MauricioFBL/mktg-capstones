@@ -102,3 +102,4 @@ docker build .
 docker image ls 
 sh init_docker.sh
 ```
+export TF_VAR_public_key="$(cat ~/.ssh/airflow-key-no-pass.pub)"

@@ -1,12 +1,6 @@
-
-resource "aws_key_pair" "airflow_key" {
-  key_name   = "airflow-key"
-  public_key = file("~/.ssh/airflow-key.pub")
-}
-
 resource "aws_key_pair" "airflow_key_w" {
   key_name   = "airflow-key-no-pass"
-  public_key = file("~/.ssh/airflow-key-no-pass.pub")
+  public_key = var.public_key
 }
 
 resource "aws_security_group" "airflow_sg" {

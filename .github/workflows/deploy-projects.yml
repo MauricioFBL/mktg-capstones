@@ -108,6 +108,8 @@ jobs:
   terraform:
     name: Terraform Workflow
     runs-on: ubuntu-latest
+    env:
+      TF_VAR_public_key: ${{ secrets.EC2_SSH_KEY }}
     defaults:
       run:
         working-directory: infra/terraform # Ajusta si tu path es diferente

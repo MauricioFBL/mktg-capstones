@@ -27,3 +27,7 @@ variable "project" {
   default     = "fcorp"
 }
 
+variable "public_key" {
+  description = "SSH public key"
+  type        = string
+}
