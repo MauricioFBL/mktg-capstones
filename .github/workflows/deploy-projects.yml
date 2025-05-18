@@ -1,0 +1,175 @@
+name: Linting con Ruff
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Actualizar e Instalar Ruff
+        run: |
+          pip install --upgrade pip
+          pip install --upgrade ruff
+
+      - name: Ejecutar Ruff y obtener puntuación
+        run: ruff check --output-format json | tee ruff_results.json
+
+      - name: Imprimir Resultados de Ruff (Debug)
+        run: cat ruff_results.json
+
+      - name: Contar Errores con jq
+        id: contar_errores
+        run: echo "puntuacion=$(jq '.[].severity' ruff_results.json | grep -c error)" >> $GITHUB_OUTPUT
+
+      - name: Verificar Puntuación y Fallar si es Necesario
+        run: |
+          puntuacion=${{ steps.contar_errores.outputs.puntuacion }}
+          echo "Puntuación de Ruff: $puntuacion"
+          if [ $puntuacion -gt 15 ]; then
+            echo "La puntuación de Ruff es demasiado alta. Fallando el paso."
+            exit 1
+          fi
+
+  deploy-dags:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy DAGs to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "dags/*.py"
+          target: "/home/ec2-user/airflow/dags"
+          strip_components: 1
+
+      - name: Copy DAGs into Airflow container
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker cp /home/ec2-user/airflow/dags/. airflow-docker-webserver-1:/opt/airflow/dags
+
+      - name: Restart Airflow webserver
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker restart airflow-docker-webserver-1
+
+      - name: Validate DAG errors
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sleep 10  # espera que webserver se reinicie      
+            echo "Revisando DAGs cargados en Airflow..."
+            docker exec airflow-docker-webserver-1 airflow dags list --output json > dags_output.json
+            if grep -q 'Traceback' /opt/airflow/logs/scheduler/latest/airflow-scheduler.log; then
+              echo "❌ Se encontraron errores al cargar los DAGs"
+              docker exec airflow-docker-webserver-1 cat /opt/airflow/logs/scheduler/latest/airflow-scheduler.log
+              exit 1
+            fi
+
+      - name: Verify DAGs in container (optional)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker exec airflow-docker-webserver-1 ls -l /opt/airflow/dags
+
+  terraform:
+    name: Terraform Workflow
+    runs-on: ubuntu-latest
+    env:
+      TF_VAR_public_key: ${{ secrets.EC2_PUB_KEY }}
+    defaults:
+      run:
+        working-directory: infra/terraform # Ajusta si tu path es diferente
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7 # Usa la versión que prefieras
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -no-color -out=tfplan > plan.out
+
+      - name: Check for resource destruction
+        run: |
+          destroy_count=$(grep -E "^-/" plan.out | wc -l)
+          echo "Resources to destroy: $destroy_count"
+          if [ "$destroy_count" -gt 0 ]; then
+            echo "::warning:: ⚠️ Terraform plan will destroy $destroy_count resources"
+          fi
+
+      - name: Upload plan to PR (optional)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infra/terraform/plan.out', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Terraform Plan Output:\n\n\`\`\`\n${plan}\n\`\`\``
+            });
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -input=false tfplan
