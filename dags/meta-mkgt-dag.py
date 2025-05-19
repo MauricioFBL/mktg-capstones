@@ -45,12 +45,13 @@ def execute_glue_job(job_name, glue_client, script_args=None):
 
 def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
     """Wait for Glue job completion."""
-    while True:
+    status = "RUNNING"
+    while status not in ["SUCCEEDED", "FAILED", "STOPPED"]:
         response = glue_client.get_job_run(JobName=job_name, RunId=job_run_id)
         status = response["JobRun"]["JobRunState"]
-        if status in ["SUCCEEDED", "FAILED", "STOPPED"]:
-            return status
-        time.sleep(20)
+        time.sleep(60)
+
+    return status
 
 
 def execute_glue_job_and_wait(job_name, script_args=None):
@@ -60,6 +61,7 @@ def execute_glue_job_and_wait(job_name, script_args=None):
     status = wait_for_glue_job_completion(job_name, job_run_id, glue_client)
     if status != "SUCCEEDED":
         raise Exception(f"Glue job {job_name} failed with status: {status}")
+    glue_client.close()
 
 
 with DAG(
@@ -93,7 +95,7 @@ with DAG(
         task_id="simulate_marketing_data",
         python_callable=execute_glue_job_and_wait,
         op_args=["sdata-ingestion-social-media"],
-        provide_context=True,
+        provide_context=False,
     )
 
     # 2. Validar archivo generado (por ejemplo daily_data.csv)
@@ -111,7 +113,7 @@ with DAG(
         task_id="transform_social_media_data",
         python_callable=execute_glue_job_and_wait,
         op_args=["data-transformation-social-media"],
-        provide_context=True,
+        provide_context=False,
     )
 
     # 4. Crear/Actualizar tabla en Athena
@@ -172,7 +174,7 @@ with DAG(
         task_id="create_meta_data_summary",
         python_callable=execute_glue_job_and_wait,
         op_args=["data-consumption-social-media-meta"],
-        provide_context=True,
+        provide_context=False,
     )
 
     # 7. Crear/Actualizar tabla en Athena consumption
