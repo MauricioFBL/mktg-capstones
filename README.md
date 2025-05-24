@@ -229,7 +229,7 @@ pip install -r requirements.txt
 ```bash
 # install docker
 docker ps -al
-docker build .
+docker build -t jupyter-notebook-spark:latest .
 docker image ls 
 sh init_docker.sh
 ```
