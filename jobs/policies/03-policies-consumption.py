@@ -1,4 +1,4 @@
-"""Glue job to get policies data from several files, clean them and create a one big table."""
+"""Glue job to get policies data from clean stage, applies transformations and write on consumption stage."""
 
 import logging
 import sys
