@@ -93,7 +93,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker exec airflow-webserver bash -c 'find /opt/airflow/dags -type f -name "*.py" -exec touch {} \;'
+            docker exec airflow-scheduler bash -c 'find /opt/airflow/dags -type f -name "*.py" -exec touch {} \;'
 
       # 🧪 3. Validación en el Webserver
       - name: Validate DAGs on Webserver
