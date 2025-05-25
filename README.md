@@ -20,10 +20,8 @@ This repository contains an end-to-end data analytics pipelines for data analyti
 ```
 marketing-analytics-pipeline/
 │── dags/                     # Airflow (MWAA) DAGs for orchestration
-│── data/                     # Sample or test data
 │── scripts/                   # Data generation and ETL scripts
 │── config/                    # Configurations and credentials (DO NOT include real credentials)
-│── infrastructure/            # Infrastructure as Code (IaC)
 │── notebooks/                 # Jupyter Notebooks for exploratory analysis
 │── sql/                       # SQL queries for analysis
 │── reports/                   # Generated reports and dashboards
@@ -60,7 +58,22 @@ marketing-analytics-pipeline/
 │── Dockerfile                 # Docker setup
 │── setup.py                   # Custom package installation
 ```
+---
+## Airflow Architecture
+```mermaid
+graph TD
+  subgraph VPC
+    WebServer[EC2 t3.medium - Webserver]
+    Scheduler[EC2 t3.micro - Scheduler]
+    RDS[(RDS PostgreSQL)]
+    S3[[S3: fcorp-data-prod]]
+  end
 
+  WebServer -->|SQLAlchemy Conn| RDS
+  Scheduler -->|SQLAlchemy Conn| RDS
+  WebServer -->|Mount DAGs/Plugins/Logs| S3
+  Scheduler -->|Mount DAGs/Plugins/Logs| S3
+```
 ---
 
 ## 🛠️ Execution Flow
@@ -229,7 +242,7 @@ pip install -r requirements.txt
 ```bash
 # install docker
 docker ps -al
-docker build .
+docker build -t jupyter-notebook-spark:latest .
 docker image ls 
 sh init_docker.sh
 ```
