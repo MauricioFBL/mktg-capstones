@@ -8,9 +8,12 @@ terraform {
   }
 }
 module "glue_jobs" {
-  source = "./glue"
+  source = "./glue_job"
 
   # Pasa variables si las necesita:
-  s3_bucket = var.s3_bucket
-  glue_role = var.glue_role
+
+  environment = var.environment
+  project     = var.project
+  region      = var.region
+  glue_bucket = var.glue_bucket
 }
