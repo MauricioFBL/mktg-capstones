@@ -31,3 +31,9 @@ variable "public_key" {
   description = "SSH public key"
   type        = string
 }
+
+variable "db_password" {
+  description = "SSH public key"
+  type        = string
+  default     = "airflow123"
+}
