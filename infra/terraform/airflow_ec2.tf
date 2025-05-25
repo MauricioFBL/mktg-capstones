@@ -48,7 +48,7 @@ resource "aws_security_group" "airflow_sg" {
     from_port = 8080
     to_port   = 8080
     protocol  = "tcp"
-    self      = true
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
