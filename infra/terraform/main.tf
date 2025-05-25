@@ -7,3 +7,10 @@ terraform {
     }
   }
 }
+module "glue_jobs" {
+  source = "./glue"
+
+  # Pasa variables si las necesita:
+  s3_bucket = var.s3_bucket
+  glue_role = var.glue_role
+}
