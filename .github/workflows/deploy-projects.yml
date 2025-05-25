@@ -64,6 +64,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "dags/"
           target: "/home/ec2-user/airflow/dags"
+          strip_components: 1
 
       - name: Trigger DAG reload on Webserver
         uses: appleboy/ssh-action@v1.0.0
@@ -72,7 +73,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker exec airflow-webserver bash -c "touch /opt/airflow/dags/*.py"
+            docker exec airflow-webserver bash -c 'find /opt/airflow/dags -type f -name "*.py" -exec touch {} \;'
 
       # 📦 2. Copiar DAGs al Scheduler
       - name: Copy DAGs to Scheduler
@@ -83,6 +84,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "dags/"
           target: "/home/ec2-user/airflow/dags"
+          strip_components: 1
 
       - name: Trigger DAG reload on Scheduler
         uses: appleboy/ssh-action@v1.0.0
@@ -91,7 +93,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker exec airflow-scheduler bash -c "touch /opt/airflow/dags/*.py"
+            docker exec airflow-webserver bash -c 'find /opt/airflow/dags -type f -name "*.py" -exec touch {} \;'
 
       # 🧪 3. Validación en el Webserver
       - name: Validate DAGs on Webserver
