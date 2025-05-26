@@ -59,7 +59,7 @@ def read_data(spark: SparkSession) -> DataFrame:
         Dataframe: Dataframe from staging.
 
     """
-    df = spark.read.option('header', True).csv(f'{get_staging_s3_location()}/stg_policies')
+    df = spark.read.parquet(f'{get_staging_s3_location()}/stg_policies')
     return df
 
 # Bussiness Logic - Transformations
