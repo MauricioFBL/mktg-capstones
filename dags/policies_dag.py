@@ -189,8 +189,7 @@ with DAG(
                 f's3://{BUCKET}/{RAW_PATH}/policies_levels.csv',
                 f's3://{BUCKET}/{RAW_PATH}/states.csv',
                 f's3://{BUCKET}/{RAW_PATH}/transactions.csv'],
-        aws_conn_id = 'aws_default',
-        region_name=REGION
+        aws_conn_id = 'aws_default'
     )
 
     # Orquestacion del flujo de tareas.
