@@ -16,8 +16,8 @@ resource "aws_s3_object" "aws_load_01_simulate_multiples_tables" {
 }
 
 # Define Glue job
-resource "aws_glue_job" "01_simulate_multiples_tables" {
-  name     = "01-simulate-multiples-tables"
+resource "aws_glue_job" "el_01_simulate_multiples_tables" {
+  name = "01-simulate-multiples-tables"
   role_arn = aws_iam_role.glue_role.arn
 
   command {
@@ -61,8 +61,8 @@ resource "aws_s3_object" "aws_load_02_data_clean_big_table" {
 }
 
 # Define Glue job
-resource "aws_glue_job" "02_data_clean_big_table" {
-  name     = "02-data-clean-big-table"
+resource "aws_glue_job" "el_02_data_clean_big_table" {
+  name = "02-data-clean-big-table"
   role_arn = aws_iam_role.glue_role.arn
 
   command {
@@ -102,8 +102,8 @@ resource "aws_s3_object" "aws_load_03_policies_consumption" {
 }
 
 # Define Glue job
-resource "aws_glue_job" "03_policies_consumption" {
-  name     = "03-policies-consumption"
+resource "aws_glue_job" "el_03_policies_consumption" {
+  name = "03-policies-consumption"
   role_arn = aws_iam_role.glue_role.arn
 
   command {
