@@ -6,8 +6,8 @@
 resource "aws_s3_object" "aws_load_01_simulate_multiples_tables" {
   bucket = var.glue_bucket
   key    = "scripts/python_shell/01-simulate-multiples-tables.py"
-  source = "../../../jobs/policies/01-simulate-multiples-tables.py"
-  etag   = filemd5("../../../jobs/policies/01-simulate-multiples-tables.py")
+  source = "../../jobs/policies/01-simulate-multiples-tables.py"
+  etag   = filemd5("../../jobs/policies/01-simulate-multiples-tables.py")
 
   tags = {
     Environment = var.environment
@@ -51,8 +51,8 @@ resource "aws_glue_job" "el_01_simulate_multiples_tables" {
 resource "aws_s3_object" "aws_load_02_data_clean_big_table" {
   bucket = var.glue_bucket
   key    = "scripts/glue/02-data-clean-big-table.py"
-  source = "../../../jobs/policies/02-data-clean-big-table.py"
-  etag   = filemd5("../../../jobs/policies/02-data-clean-big-table.py")
+  source = "../../jobs/policies/02-data-clean-big-table.py"
+  etag   = filemd5("../../jobs/policies/02-data-clean-big-table.py")
 
   tags = {
     Project     = var.project
@@ -92,8 +92,8 @@ resource "aws_glue_job" "el_02_data_clean_big_table" {
 resource "aws_s3_object" "aws_load_03_policies_consumption" {
   bucket = var.glue_bucket
   key    = "scripts/glue/03-policies-consumption.py"
-  source = "../../../jobs/policies/03-policies-consumption.py"
-  etag   = filemd5("../../../jobs/policies/03-policies-consumption.py")
+  source = "../../jobs/policies/03-policies-consumption.py"
+  etag   = filemd5("../../jobs/policies/03-policies-consumption.py")
 
   tags = {
     Project     = var.project
