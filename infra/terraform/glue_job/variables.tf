@@ -16,3 +16,8 @@ variable "project" {
   description = "Project namespace prefix"
   default     = "fcorp"
 }
+
+variable "glue_role_arn" {
+  description = "IAM role ARN for Glue Jobs"
+  type        = string
+}

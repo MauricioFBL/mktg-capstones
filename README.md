@@ -32,7 +32,7 @@ marketing-analytics-pipeline/
 │   ├── social-media-mktg/
 │   │   └── social-media-big-tbl.py  # Código del Glue Job
 │   └── ...   
-│── build/                     # lambda functions zip packahes
+│── build/                     # lambda functions zip Packages
 │── functions/                 # Lambda functions
 │       └── function/
 │           └── lambda_function.py
@@ -74,6 +74,51 @@ graph TD
   WebServer -->|Mount DAGs/Plugins/Logs| S3
   Scheduler -->|Mount DAGs/Plugins/Logs| S3
 ```
+---
+
+### Component Overview
+
+| Component        | Description                                                                 |
+|------------------|-----------------------------------------------------------------------------|
+| **EC2 Webserver**| `t3.medium` instance running `airflow-webserver` via Docker Compose         |
+| **EC2 Scheduler**| `t3.micro` instance running `airflow-scheduler` via Docker Compose          |
+| **RDS PostgreSQL**| `db.t3.micro` instance used as Airflow metadata database                   |
+| **S3 Bucket**    | Stores scripts, DAGs, logs, and Athena output                               |
+| **Security Group**| Allows ports: `22` (SSH), `8080` (UI), `5432` (RDS), `8793` (RPC)          |
+
+---
+
+## 🧩 Component Configuration Details
+
+### EC2 Instances
+
+- AMI: Amazon Linux 2 (`ami-0c02fb55956c7d316`)
+- Docker and Docker Compose installed via `user_data`
+- Directory structure:
+  ```
+  /home/ec2-user/airflow/
+  ├── dags/
+  ├── logs/
+  ├── plugins/
+  └── docker-compose.yaml
+  ```
+- `prevent_destroy = true` used to prevent accidental deletions
+- IAM profile with permissions for Glue, S3, Athena, etc.
+
+### Docker Compose
+
+- Airflow 2.9 using `LocalExecutor`
+- Webserver exposes port `8080`
+- DAGs, logs, plugins are mounted as Docker volumes
+
+### RDS PostgreSQL
+
+- DB name: `airflow`
+- Username: `airflow`
+- Port: `5432`
+- Accessible only from EC2 instances within the same VPC
+- Encryption and backups are **disabled** (for demo/testing)
+
 ---
 
 ## 🛠️ Execution Flow
@@ -138,7 +183,7 @@ subgraph Airflow Runtime
   - SCP to EC2 using `appleboy/scp-action`
   - Copy DAGs into the Docker container
   - Restart Airflow webserver
-  - Check for DAG loading errors
+  - Check for DAG import or execution errors
 
 ### Terraform Plan & Apply Workflow
 
@@ -186,6 +231,64 @@ resource "aws_glue_job" "my_job" {
   }
 }
 ```
+---
+
+### ⚙️ How It Works
+
+- `dags/`:  
+  This folder includes **Airflow DAGs** that define pipeline logic using operators like `PythonOperator`, `AthenaOperator`, and `S3DeleteObjectsOperator`.
+
+- `jobs/`:  
+  This directory holds **custom Python scripts** used by DAGs—such as file simulation, Glue client wrappers, data preprocessing, etc. These are imported by your DAGs or mounted into the containers.
+
+- `infra/terraform/`:  
+  Contains all the **Terraform modules and configurations** that provision:
+  - EC2 instances (webserver + scheduler)
+  - RDS PostgreSQL (Airflow metadata DB)
+  - VPC, Subnets, Internet Gateway
+  - IAM Roles & Instance Profiles
+  - S3 Buckets
+
+- `.github/workflows/`:  
+  This contains the **GitHub Actions pipelines** that automate:
+  - Code linting (Ruff)
+  - DAG deployment to EC2 (via SSH + Docker)
+  - Terraform plan & apply with protection against destructive changes
+  - DAG validation after deployment
+
+---
+
+### 🔁 Deployment Flow
+
+1. You push changes to the `main` branch.
+2. GitHub Actions runs:
+   - **Linting** with `ruff`
+   - **Copying DAGs** to the webserver and scheduler EC2 instances
+   - **Triggering DAG reloads** inside Docker containers
+   - **Running Terraform** to update infrastructure (only applies if safe)
+
+3. Any change to DAG logic, scripts, or infrastructure is immediately deployed and available.
+
+---
+
+## ✅ Key Features
+
+- DAGs are synced across EC2 nodes to ensure consistency
+- Glue jobs and Athena queries are defined as part of DAGs
+- All AWS resources are version-controlled via Terraform
+- CI/CD provides safe and reproducible deployments
+- DAGs are validated automatically after each push
+
+---
+
+## 🔐 Security and Good Practices
+
+- IAM instance profile with limited permissions
+- Secrets handled via GitHub Actions (`EC2_HOST`, `SSH_KEY`, `AWS_ACCESS_KEY`, etc.)
+- EC2 instances live in public subnets (for simplicity)
+- `prevent_destroy` enabled on EC2 instances
+- Use of `vpc_security_group_ids` instead of `security_groups` to avoid EC2 replacement
+- CI/CD checks for destructive changes in Terraform plan
 
 ---
 
@@ -209,7 +312,7 @@ resource "aws_glue_job" "my_job" {
 ---
 
 
-## 🚀 Technologies Desaired to be Used
+## 🚀 Technologies planned for integration
 - **AWS Lambda, S3, Glue, Athena** for data storage and processing.
 - **Redshift, Snowflake** for structured data storage.
 - **Power BI, QuickSight** for visualization and data analysis.
