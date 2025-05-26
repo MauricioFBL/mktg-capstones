@@ -142,7 +142,7 @@ with DAG(
         task_id="simulate_marketing_data",
         python_callable=execute_glue_job_and_wait,
         op_args=["sdata-ingestion-social-media"],
-        provide_context=True,
+        provide_context = True,
     )
 
     # 2. Validar archivo generado (por ejemplo daily_data.csv)
@@ -160,7 +160,7 @@ with DAG(
         task_id="transform_social_media_data",
         python_callable=execute_glue_job_and_wait,
         op_args=["data-transformation-social-media"],
-        provide_context=True,
+        provide_context = True,
     )
 
     # 4. Crear/Actualizar tabla en Athena
@@ -221,7 +221,7 @@ with DAG(
         task_id="create_meta_data_summary",
         python_callable=execute_glue_job_and_wait,
         op_args=["data-consumption-social-media-meta"],
-        provide_context=True,
+        provide_context = True,
     )
 
     # 7. Crear/Actualizar tabla en Athena consumption
