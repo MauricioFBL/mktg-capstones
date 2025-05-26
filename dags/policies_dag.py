@@ -152,8 +152,7 @@ with DAG(
             premium_income_ratio DOUBLE,
             complaint_rate DOUBLE,
             clv_categorical STRING,
-            clv_categorical_percent DOUBLE,
-            load_date DATE
+            clv_categorical_percent DOUBLE
         )
         PARTITIONED BY (
             load_date DATE
