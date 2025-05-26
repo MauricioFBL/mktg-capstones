@@ -123,10 +123,10 @@ def main():
     policy_levels_df,
     states_df,
     transactions_df) = read_data(spark)
-    data_joined = merging_all_tables(policies_types_df,
-                                     policy_levels_df,
-                                     states_df,
-                                     transactions_df)
+    data_joined = merging_all_tables(df1=transactions_df,
+                                     df2=policies_types_df,
+                                     df3=policy_levels_df,
+                                     df4=states_df)
     data_cleaned = drop_unnecessary_columns(data_joined)
     save_staging_data(data_cleaned,
                       f'{get_staging_s3_location()}/stg_policies')
