@@ -28,14 +28,33 @@ ATHENA_TABLE_CON = "meta_monthly_summary"
 OUTPUT_LOCATION = f"s3://{BUCKET}/athena_query_results/"
 
 
-def get_glue_client():
-    """Get Glue client."""
+def get_glue_client() -> boto3.client:
+    """Get Glue client.
+
+    Create and return a boto3 Glue client configured for the specified AWS region.
+
+    Returns:
+        boto3.client: A Glue client instance for interacting with AWS Glue.
+
+    """
     session = boto3.Session(region_name=REGION)
     return session.client("glue")
 
 
-def execute_glue_job(job_name, glue_client, script_args=None):
-    """Execute Glue job."""
+def execute_glue_job(job_name: str, glue_client: boto3.client, script_args: dict = None) -> str:
+    """Execute Glue job.
+
+    Start an AWS Glue job with optional script arguments.
+
+    Args:
+        job_name (str): The name of the Glue job to execute.
+        glue_client (boto3.client): A boto3 Glue client.
+        script_args (dict, optional): Dictionary of arguments to pass to the Glue job. Defaults to None.
+
+    Returns:
+        str: The JobRunId of the started Glue job.
+
+    """
     response = glue_client.start_job_run(
         JobName=job_name,
         Arguments=script_args or {}
@@ -43,8 +62,23 @@ def execute_glue_job(job_name, glue_client, script_args=None):
     return response["JobRunId"]
 
 
-def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
-    """Wait for Glue job completion."""
+def wait_for_glue_job_completion(job_name: str, job_run_id: str, glue_client: boto3.client) -> str:
+    """Wait for Glue job completion.
+
+    Wait for an AWS Glue job to finish execution.
+
+    This function polls the Glue job status every 60 seconds until the job completes
+    (either SUCCEEDED, FAILED, or STOPPED).
+
+    Args:
+        job_name (str): The name of the Glue job.
+        job_run_id (str): The ID of the Glue job run.
+        glue_client (boto3.client): A boto3 Glue client.
+
+    Returns:
+        str: The final status of the Glue job run.
+
+    """
     status = "RUNNING"
     while status not in ["SUCCEEDED", "FAILED", "STOPPED"]:
         response = glue_client.get_job_run(JobName=job_name, RunId=job_run_id)
@@ -54,8 +88,21 @@ def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
     return status
 
 
-def execute_glue_job_and_wait(job_name, script_args=None):
-    """Execute Glue job and wait for completion."""
+def execute_glue_job_and_wait(job_name: str, script_args: dict = None):
+    """Execute Glue job and wait for completion.
+
+    Execute an AWS Glue job and wait for its completion.
+
+    Raises an exception if the job fails or is stopped.
+
+    Args:
+        job_name (str): The name of the Glue job to run.
+        script_args (dict, optional): Dictionary of arguments to pass to the Glue job. Defaults to None.
+
+    Raises:
+        Exception: If the Glue job does not complete successfully.
+
+    """
     glue_client = get_glue_client()
     job_run_id = execute_glue_job(job_name, glue_client)
     status = wait_for_glue_job_completion(job_name, job_run_id, glue_client)
@@ -86,7 +133,7 @@ with DAG(
 
     **Tecnologías**: AWS Glue, S3, Athena, Airflow
 
-    **Autor**: airflow
+    **Autor**: mbautista
     """
 ) as dag:
 
