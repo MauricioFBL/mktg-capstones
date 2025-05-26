@@ -91,7 +91,7 @@ with DAG(
         task_id = "create_mult_files_raw_process",
         python_callable = execute_glue_job_and_wait,
         op_args = ["01-simulate-multiples-tables"],
-        provid_context = True
+        provide_context = True
     )
 
     # TAREA 2: Consolidacion de los archivos y escritura en zona staging.
@@ -99,7 +99,7 @@ with DAG(
         task_id = "consolidate_stg_process",
         python_callable = execute_glue_job_and_wait,
         op_args = ["02-data-clean-big-table"],
-        provid_context = True
+        provide_context = True
     )
 
     # TAREA 3: Transformaciones para analitica en zona consumption.
@@ -107,7 +107,7 @@ with DAG(
         task_id = "transformations_cons_process",
         python_callable = execute_glue_job_and_wait,
         op_args = ["03-policies-consumption"],
-        provid_context = True
+        provide_context = True
     )
 
     # TAREA 4: Creacion Base de Datos "marketing_db" en Athena.
@@ -189,8 +189,7 @@ with DAG(
                 f's3://{BUCKET}/{RAW_PATH}/policies_levels.csv',
                 f's3://{BUCKET}/{RAW_PATH}/states.csv',
                 f's3://{BUCKET}/{RAW_PATH}/transactions.csv'],
-        aws_conn_id = 'aws_default',
-        region_name=REGION
+        aws_conn_id = 'aws_default'
     )
 
     # Orquestacion del flujo de tareas.

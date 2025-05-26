@@ -74,17 +74,35 @@ resource "aws_security_group" "airflow_sg" {
 }
 # EC2 FOR AIRFLOW WEBSERVER
 resource "aws_instance" "airflow" {
-  ami                  = "ami-0c02fb55956c7d316"
-  instance_type        = "t3.medium"
-  key_name             = aws_key_pair.airflow_key_w.key_name
-  subnet_id            = aws_subnet.public_subnet_1.id
-  security_groups      = [aws_security_group.airflow_sg.id]
-  iam_instance_profile = aws_iam_instance_profile.airflow_instance_profile.name # <- Esta línea es clave
+  ami                    = "ami-0c02fb55956c7d316"
+  instance_type          = "t3.medium"
+  key_name               = aws_key_pair.airflow_key_w.key_name
+  subnet_id              = aws_subnet.public_subnet_1.id
+  vpc_security_group_ids = [aws_security_group.airflow_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.airflow_instance_profile.name # <- Esta línea es clave
 
   associate_public_ip_address = true
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install docker -y
+              service docker start
+              usermod -a -G docker ec2-user
+              curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
+              mkdir -p /home/ec2-user/airflow/{dags,logs,plugins}
+              chmod -R 777 /home/ec2-user/airflow
+              EOF
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
     Name = "airflow-webserver"
   }
+
   root_block_device {
     volume_size = 20
   }
@@ -95,14 +113,32 @@ output "ec2_public_ip" {
 }
 
 resource "aws_instance" "airflow_scheduler" {
-  ami                  = "ami-0c02fb55956c7d316"
-  instance_type        = "t3.micro"
-  key_name             = aws_key_pair.airflow_key_w.key_name
-  subnet_id            = aws_subnet.public_subnet_1.id
-  security_groups      = [aws_security_group.airflow_sg.id]
-  iam_instance_profile = aws_iam_instance_profile.airflow_instance_profile.name
+  ami                    = "ami-0c02fb55956c7d316"
+  instance_type          = "t3.micro"
+  key_name               = aws_key_pair.airflow_key_w.key_name
+  subnet_id              = aws_subnet.public_subnet_1.id
+  vpc_security_group_ids = [aws_security_group.airflow_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.airflow_instance_profile.name
 
   associate_public_ip_address = true
+
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              amazon-linux-extras install docker -y
+              service docker start
+              usermod -a -G docker ec2-user
+              curl -SL https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
+              mkdir -p /home/ec2-user/airflow/{dags,logs,plugins}
+              chmod -R 777 /home/ec2-user/airflow
+              EOF
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = {
     Name = "airflow-scheduler"
   }
