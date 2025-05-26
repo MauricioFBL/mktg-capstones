@@ -45,12 +45,13 @@ def execute_glue_job(job_name, glue_client, script_args=None):
 
 def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
     """Wait for Glue job completion."""
-    while True:
+    status = "RUNNING"
+    while status not in ["SUCCEEDED", "FAILED", "STOPPED"]:
         response = glue_client.get_job_run(JobName=job_name, RunId=job_run_id)
         status = response["JobRun"]["JobRunState"]
-        if status in ["SUCCEEDED", "FAILED", "STOPPED"]:
-            return status
-        time.sleep(20)
+        time.sleep(60)
+
+    return status
 
 
 def execute_glue_job_and_wait(job_name, script_args=None):
@@ -60,6 +61,7 @@ def execute_glue_job_and_wait(job_name, script_args=None):
     status = wait_for_glue_job_completion(job_name, job_run_id, glue_client)
     if status != "SUCCEEDED":
         raise Exception(f"Glue job {job_name} failed with status: {status}")
+    glue_client.close()
 
 
 with DAG(
