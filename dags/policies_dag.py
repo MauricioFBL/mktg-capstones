@@ -19,8 +19,7 @@ default_args = {
 
 BUCKET = "fcorp-data-prod"
 ORIG_FILE_PATH = "raw/policies/orig_file/"
-RAW_PATH = "raw/policies/tables/"
-
+RAW_PATH = "raw/policies/tables"
 CON_PATH = "consumption/policies/cons_policies/"
 REGION = "us-east-1"
 ATHENA_DB = "marketing_db"
@@ -152,8 +151,7 @@ with DAG(
             premium_income_ratio DOUBLE,
             complaint_rate DOUBLE,
             clv_categorical STRING,
-            clv_categorical_percent DOUBLE,
-            load_date DATE
+            clv_categorical_percent DOUBLE
         )
         PARTITIONED BY (
             load_date DATE
@@ -185,10 +183,10 @@ with DAG(
     delete_raw_files = S3DeleteObjectsOperator(
         task_id = 'delete_raw_files',
         bucket = BUCKET,
-        keys = [f's3://{BUCKET}/{RAW_PATH}/policies_types.csv',
-                f's3://{BUCKET}/{RAW_PATH}/policies_levels.csv',
-                f's3://{BUCKET}/{RAW_PATH}/states.csv',
-                f's3://{BUCKET}/{RAW_PATH}/transactions.csv'],
+        keys = [f'{RAW_PATH}/policies_types.csv',
+                f'{RAW_PATH}/policies_levels.csv',
+                f'{RAW_PATH}/states.csv',
+                f'{RAW_PATH}/transactions.csv'],
         aws_conn_id = 'aws_default'
     )
 

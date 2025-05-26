@@ -96,6 +96,22 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
         ]
       },
       {
+        Sid : "DeletePermissionS3",
+        Effect : "Allow",
+        Action : [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:DeleteObject"
+        ],
+        Resource : [
+          "arn:aws:s3:::fcorp-data-prod/raw/*",
+          "arn:aws:s3:::fcorp-data-prod/staging/*",
+          "arn:aws:s3:::fcorp-data-prod/consumption/*",
+        ]
+      },
+      {
         Sid : "AllowGetGlueExecutionRole",
         Effect : "Allow",
         Action : ["iam:GetRole"],
