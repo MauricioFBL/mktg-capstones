@@ -184,7 +184,7 @@ with DAG(
 
     # TAREA 6: Ejecucion de un repair table para registrar particiones.
     repair_athena_table_1 = AthenaOperator(
-        task_id="repair_athena_table_consumption",
+        task_id="repair_athena_table_consumption_1",
         query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
         database=ATHENA_DB,
         output_location=OUTPUT_LOCATION,
@@ -194,7 +194,7 @@ with DAG(
 
     # TAREA 6.1: Ejecucion de un repair table para registrar particiones.
     repair_athena_table_2 = AthenaOperator(
-        task_id="repair_athena_table_consumption",
+        task_id="repair_athena_table_consumption_2",
         query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
         database=ATHENA_DB,
         output_location=OUTPUT_LOCATION,
