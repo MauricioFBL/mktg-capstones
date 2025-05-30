@@ -184,12 +184,12 @@ with DAG(
 
     # TAREA 6: Ejecucion de un repair table para registrar particiones.
     repair_athena_table = AthenaOperator(
-    task_id="repair_athena_table_consumption",
-    query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
-    database=ATHENA_DB,
-    output_location=OUTPUT_LOCATION,
-    aws_conn_id="aws_default",
-    region_name=REGION
+        task_id="repair_athena_table_consumption",
+        query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
+        database=ATHENA_DB,
+        output_location=OUTPUT_LOCATION,
+        aws_conn_id="aws_default",
+        region_name=REGION
     )
 
     # TAREA 7: Borrado de archivos en zona raw.
@@ -204,4 +204,4 @@ with DAG(
     )
 
     # Orquestacion del flujo de tareas.
-    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> waiting_table_creation >> repair_athena_table >> delete_raw_files
+    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> repair_athena_table >> waiting_table_creation >> repair_athena_table >> delete_raw_files
