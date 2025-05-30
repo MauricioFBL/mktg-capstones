@@ -60,6 +60,12 @@ def execute_glue_job_and_wait(job_name, script_args=None):
     if status != "SUCCEEDED":
         raise Exception(f"Glue job {job_name} failed with status: {status}")
 
+
+def sleep_to_next_taks():
+    """Wait 60 seconds to execute repair Athena query."""
+    time.sleep(60)
+
+
 with DAG(
     dag_id = "el_glue_policies_pipeline",
     default_args = default_args,
@@ -169,6 +175,13 @@ with DAG(
         region_name=REGION,
     )
 
+    # TAREA 5.1: Tiempo de espera posterior a la crecion de la tabla.
+    waiting_table_creation = PythonOperator(
+        task_id = "waiting_table_creation",
+        python_callable = sleep_to_next_taks,
+        provide_context = True
+    )
+
     # TAREA 6: Ejecucion de un repair table para registrar particiones.
     repair_athena_table = AthenaOperator(
     task_id="repair_athena_table_consumption",
@@ -191,4 +204,4 @@ with DAG(
     )
 
     # Orquestacion del flujo de tareas.
-    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> repair_athena_table >> delete_raw_files
+    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> waiting_table_creation >> repair_athena_table >> delete_raw_files
