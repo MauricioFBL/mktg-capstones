@@ -60,6 +60,12 @@ def execute_glue_job_and_wait(job_name, script_args=None):
     if status != "SUCCEEDED":
         raise Exception(f"Glue job {job_name} failed with status: {status}")
 
+
+def sleep_to_next_taks():
+    """Wait 60 seconds to execute repair Athena query."""
+    time.sleep(60)
+
+
 with DAG(
     dag_id = "el_glue_policies_pipeline",
     default_args = default_args,
@@ -133,11 +139,11 @@ with DAG(
             Gender STRING,
             `Location Code` STRING,
             `Marital Status` STRING,
-            `Monthly Premium Auto` INT,
-            `Months Since Last Claim` INT,
-            `Months Since Policy Inception` INT,
-            `Number of Open Complaints` INT,
-            `Number of Policies` INT,
+            `Monthly Premium Auto` STRING,
+            `Months Since Last Claim` STRING,
+            `Months Since Policy Inception` STRING,
+            `Number of Open Complaints` STRING,
+            `Number of Policies` STRING,
             `Renew Offer Type` STRING,
             `Sales Channel` STRING,
             `Total Claim Amount` DOUBLE,
@@ -169,16 +175,32 @@ with DAG(
         region_name=REGION,
     )
 
-    # TAREA 6: Ejecucion de un repair table para registrar particiones.
-    repair_athena_table = AthenaOperator(
-    task_id="repair_athena_table_consumption",
-    query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
-    database=ATHENA_DB,
-    output_location=OUTPUT_LOCATION,
-    aws_conn_id="aws_default",
-    region_name=REGION
+    # TAREA 5.1: Tiempo de espera posterior a la crecion de la tabla.
+    waiting_table_creation = PythonOperator(
+        task_id = "waiting_table_creation",
+        python_callable = sleep_to_next_taks,
+        provide_context = True
     )
 
+    # TAREA 6: Ejecucion de un repair table para registrar particiones.
+    repair_athena_table_1 = AthenaOperator(
+        task_id="repair_athena_table_consumption_1",
+        query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
+        database=ATHENA_DB,
+        output_location=OUTPUT_LOCATION,
+        aws_conn_id="aws_default",
+        region_name=REGION
+    )
+
+    # TAREA 6.1: Ejecucion de un repair table para registrar particiones.
+    repair_athena_table_2 = AthenaOperator(
+        task_id="repair_athena_table_consumption_2",
+        query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
+        database=ATHENA_DB,
+        output_location=OUTPUT_LOCATION,
+        aws_conn_id="aws_default",
+        region_name=REGION
+    )
     # TAREA 7: Borrado de archivos en zona raw.
     delete_raw_files = S3DeleteObjectsOperator(
         task_id = 'delete_raw_files',
@@ -191,4 +213,4 @@ with DAG(
     )
 
     # Orquestacion del flujo de tareas.
-    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> repair_athena_table >> delete_raw_files
+    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> repair_athena_table_1 >> waiting_table_creation >> repair_athena_table_2 >> delete_raw_files
