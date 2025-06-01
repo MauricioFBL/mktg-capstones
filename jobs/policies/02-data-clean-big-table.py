@@ -104,7 +104,7 @@ def save_staging_data(df: DataFrame,
     """Send data proccesed to staging stage."""
     logger.info('Writing into staging stage ...')
 
-    df.coalesce(1).write.partitionBy('load_date').mode('overwrite').parquet(path)
+    df.coalesce(1).write.partitionBy('load_date').mode('append').parquet(path)
 
 
     return None

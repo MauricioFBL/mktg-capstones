@@ -231,7 +231,7 @@ def write_consumption_data(df: DataFrame,
     Returns: None.
 
     """
-    df.coalesce(1).write.partitionBy('load_date').mode('overwrite').parquet(path)
+    df.coalesce(1).write.partitionBy('load_date').mode('append').parquet(path)
 
 
 def main():
