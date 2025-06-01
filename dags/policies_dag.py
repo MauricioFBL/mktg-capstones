@@ -42,6 +42,31 @@ def execute_glue_job(job_name, glue_client, script_args=None):
     return response["JobRunId"]
 
 
+def get_athena_client():
+    """Get Athena client."""
+    session = boto3.Session(region_name=REGION)
+    return session.client("athena")
+
+
+def execute_athena_msck_repair():
+    """Execute Athena Query to repair policies table."""
+    athena_client = get_athena_client()
+    query = f"MSCK REPAIR TABLE {ATHENA_TABLE};"
+    while True:
+        response = athena_client.start_query_execution(
+            QueryString=query,
+            QueryExecutionContext={'Database': ATHENA_DB},
+            ResultConfiguration={'OutputLocation': OUTPUT_LOCATION}
+            )
+        execution_id = response['QueryExecutionId']
+        status_response = athena_client.get_query_execution(QueryExecutionId=execution_id)
+        status = status_response['QueryExecution']['Status']['State']
+        print(f"Query status... {status}")
+        if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
+            return status
+        time.sleep(30)
+
+
 def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
     """Wait for Glue job completion."""
     while True:
@@ -183,6 +208,12 @@ with DAG(
     )
 
     # TAREA 6: Ejecucion de un repair table para registrar particiones.
+    repair_athena_table = PythonOperator(
+        task_id = "repair_athena_table",
+        python_callable = execute_athena_msck_repair,
+        provide_context = True
+    )
+    """
     repair_athena_table_1 = AthenaOperator(
         task_id="repair_athena_table_consumption_1",
         query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
@@ -191,16 +222,7 @@ with DAG(
         aws_conn_id="aws_default",
         region_name=REGION
     )
-
-    # TAREA 6.1: Ejecucion de un repair table para registrar particiones.
-    repair_athena_table_2 = AthenaOperator(
-        task_id="repair_athena_table_consumption_2",
-        query=f"MSCK REPAIR TABLE {ATHENA_DB}.{ATHENA_TABLE};",
-        database=ATHENA_DB,
-        output_location=OUTPUT_LOCATION,
-        aws_conn_id="aws_default",
-        region_name=REGION
-    )
+    """
     # TAREA 7: Borrado de archivos en zona raw.
     delete_raw_files = S3DeleteObjectsOperator(
         task_id = 'delete_raw_files',
@@ -213,4 +235,4 @@ with DAG(
     )
 
     # Orquestacion del flujo de tareas.
-    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> repair_athena_table_1 >> waiting_table_creation >> repair_athena_table_2 >> delete_raw_files
+    create_mult_files >> stg_process >> cons_process >> create_athena_db >> create_athena_table >> waiting_table_creation >> repair_athena_table >> delete_raw_files
