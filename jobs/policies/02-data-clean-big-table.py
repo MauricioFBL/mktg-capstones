@@ -88,6 +88,8 @@ def drop_unnecessary_columns(df: DataFrame) -> DataFrame:
     logger.info('Cleaning data...')
 
     load_date = date.today()
+    logger.info(f'Date process: {load_date}')
+
     df = df.select('*',
                    lit(load_date).alias('load_date')
                    ).drop('policy_type_id',
@@ -102,7 +104,7 @@ def save_staging_data(df: DataFrame,
     """Send data proccesed to staging stage."""
     logger.info('Writing into staging stage ...')
 
-    df.coalesce(1).write.partitionBy('load_date').mode('overwrite').parquet(path)
+    df.coalesce(1).write.partitionBy('load_date').mode('append').parquet(path)
 
 
     return None
@@ -128,6 +130,8 @@ def main():
                                      df3=policy_levels_df,
                                      df4=states_df)
     data_cleaned = drop_unnecessary_columns(data_joined)
+    logger.info(f'Rows to write: {data_cleaned.count()}')
+
     save_staging_data(data_cleaned,
                       f'{get_staging_s3_location()}/stg_policies')
 
