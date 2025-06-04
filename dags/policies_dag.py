@@ -52,19 +52,20 @@ def execute_athena_msck_repair():
     """Execute Athena Query to repair policies table."""
     athena_client = get_athena_client()
     query = f"MSCK REPAIR TABLE {ATHENA_TABLE};"
+    response = athena_client.start_query_execution(
+        QueryString=query,
+        QueryExecutionContext={'Database': ATHENA_DB},
+        ResultConfiguration={'OutputLocation': OUTPUT_LOCATION}
+        )
+    execution_id = response['QueryExecutionId']
+
     while True:
-        response = athena_client.start_query_execution(
-            QueryString=query,
-            QueryExecutionContext={'Database': ATHENA_DB},
-            ResultConfiguration={'OutputLocation': OUTPUT_LOCATION}
-            )
-        execution_id = response['QueryExecutionId']
         status_response = athena_client.get_query_execution(QueryExecutionId=execution_id)
         status = status_response['QueryExecution']['Status']['State']
         print(f"Query status... {status}")
         if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
             return status
-        time.sleep(30)
+        time.sleep(2)
 
 
 def wait_for_glue_job_completion(job_name, job_run_id, glue_client):
