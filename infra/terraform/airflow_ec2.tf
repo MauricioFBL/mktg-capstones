@@ -157,7 +157,7 @@ output "scheduler_public_ip" {
 resource "aws_db_instance" "airflow_rds" {
   identifier              = "airflow-postgres"
   engine                  = "postgres"
-  engine_version          = "15.7"
+  engine_version          = "15.12"
   instance_class          = "db.t3.micro"
   allocated_storage       = 20
   username                = "airflow"
