@@ -77,7 +77,12 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
         Action : [
           "athena:StartQueryExecution",
           "athena:GetQueryExecution",
-          "athena:GetQueryResults"
+          "athena:GetQueryResults",
+          "athena:ListDatabases",
+          "athena:ListTableMetadata",
+          "athena:GetDatabase",
+          "athena:GetTableMetadata",
+          "athena:GetWorkGroup"
         ],
         Resource : "*"
       },
@@ -109,6 +114,8 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
           "arn:aws:s3:::fcorp-data-prod/raw/*",
           "arn:aws:s3:::fcorp-data-prod/staging/*",
           "arn:aws:s3:::fcorp-data-prod/consumption/*",
+          "arn:aws:s3:::fcorp-data-prod/*",
+          "arn:aws:s3:::fcorp-data-prod",
         ]
       },
       {
@@ -136,6 +143,7 @@ resource "aws_iam_policy" "airflow_dag_extended_permissions" {
           "glue:GetPartition",
           "glue:GetPartitions",
           "glue:DeletePartition",
+          "glue:BatchCreatePartition",
         ],
         Resource = [
           "arn:aws:glue:${var.region}:${data.aws_caller_identity.current.account_id}:catalog",
