@@ -9,7 +9,8 @@ from awsglue.job import Job
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, count, lit, round, when
+from pyspark.sql.functions import col, count, lit, round, to_date, when
+from pyspark.sql.types import DoubleType
 from pyspark.sql.window import Window
 
 logger = logging.getLogger(__name__)
@@ -186,6 +187,9 @@ def create_audit_column(df: DataFrame, load_date: date) -> DataFrame:
         df(Dataframe): Dataframe with audit column.
 
     """
+    df = df.withColumn("Effective To Date", to_date("Effective To Date", "M/d/yy"))
+    df = df.withColumn("customer_lifetime_value", col("customer_lifetime_value").cast(DoubleType()))
+    df = df.withColumn("Total Claim Amount", col("Total Claim Amount").cast(DoubleType()))
     df = df.select('*',
                    lit(load_date).alias('load_date')
                    )
@@ -227,7 +231,7 @@ def write_consumption_data(df: DataFrame,
     Returns: None.
 
     """
-    df.coalesce(1).write.partitionBy('load_date').mode('overwrite').parquet(path)
+    df.coalesce(1).write.partitionBy('load_date').mode('append').parquet(path)
 
 
 def main():
@@ -248,6 +252,8 @@ def main():
     load_date = create_load_date()
     df_input = read_data(spark)
     data_processed = transformations(df_input, load_date)
+    logger.info(f'Rows to write: {data_processed.count()}')
+
     write_consumption_data(data_processed,
                            f'{get_consumption_s3_location()}/cons_policies')
 
